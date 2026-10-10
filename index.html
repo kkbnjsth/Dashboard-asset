@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChaiJaai</title>
+<meta name="apple-mobile-web-app-title" content="ChaiJaai">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<script>
+  // เปิดจากไอคอนหน้าโฮม (?go=1) → เด้งไปแอปจริงทันที
+  // เปิดลิงก์เปล่า → แสดงวิธี Add to Home Screen และแอบเติม ?go=1 ให้ URL ที่จะถูกบันทึก
+  var APP = 'https://script.google.com/macros/s/AKfycbziWQkLZvQgGFU9jc7IiO5pW6y4Bze2mittSbSfRffTgBOGo0uuuPBDlRBVqo9Ae7G4/exec';
+  if (new URLSearchParams(location.search).has('go')) {
+    location.replace(APP);
+  } else {
+    history.replaceState(null, '', location.pathname + '?go=1');
+  }
+</script>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+         font: 16px/1.5 -apple-system, system-ui, sans-serif; background: #0f2a1d; color: #e8f5ee; }
+  .box { max-width: 320px; padding: 24px 16px; text-align: center; }
+  img { width: 96px; height: 96px; border-radius: 22px; }
+  h1 { font-size: 22px; margin: 12px 0 4px; }
+  ol { text-align: left; padding-left: 20px; }
+  a { color: #7ff0b5; }
+</style>
+</head>
+<body>
+<div class="box">
+  <img src="apple-touch-icon.png" alt="">
+  <h1>ChaiJaai</h1>
+  <ol>
+    <li>กดปุ่ม Share (สี่เหลี่ยมมีลูกศรขึ้น)</li>
+    <li>เลือก <b>Add to Home Screen</b></li>
+    <li>กด Add</li>
+  </ol>
+  <p><a id="open" href="#">หรือเปิดแอปเลย →</a></p>
+</div>
+<script>document.getElementById('open').href = APP;</script>
+</body>
+</html>
