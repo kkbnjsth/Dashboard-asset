@@ -85,8 +85,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .eye svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .eye .slash{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .3s ease}
 .masked .eye .slash{stroke-dashoffset:0}
-.hero .amt,.split b,.shareline,.stamp small,.owe h2 small,.owe .pp b,.cat .row span:last-child,.day span:last-child,.tx .c,.mine,.part{transition:filter .35s ease,opacity .35s ease}
-.masked .hero .amt,.masked .split b,.masked .shareline,.masked .stamp small,.masked .owe h2 small,.masked .owe .pp b,.masked .cat .row span:last-child,.masked .day span:last-child,.masked .tx .c,.masked .mine,.masked .part{filter:blur(.32em);opacity:.8;user-select:none}
+.hero .amt,.split b,.shareline,.stamp small,.owe h2 small,.owe .pp b,.cat .row span:last-child,.day span:last-child,.tx .c,.mine,.part,.tot,.cat .dl{transition:filter .35s ease,opacity .35s ease}
+.masked .hero .amt,.masked .split b,.masked .shareline,.masked .stamp small,.masked .owe h2 small,.masked .owe .pp b,.masked .cat .row span:last-child,.masked .day span:last-child,.masked .tx .c,.masked .mine,.masked .part,.masked .tot,.masked .cat .dl{filter:blur(.32em);opacity:.8;user-select:none}
 .stamp{flex:none;transform:rotate(3deg);border:2px solid currentColor;border-radius:12px;padding:5px 11px;text-align:center;font-weight:600;font-size:12.5px;line-height:1.25;color:#055B4E;background:rgba(255,255,255,.92);text-shadow:none}
 .stamp small{display:block;font-weight:400;font-size:10.5px;opacity:.9}
 .stamp.warn{color:#a85f00}
@@ -113,6 +113,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .cat .row span:last-child{color:var(--muted);font-size:12.5px}
 .track{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
 .fill{height:100%;background:var(--bar);border-radius:99px}
+.cat .dl{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
+.cat .dl.up{color:var(--pending)}
+.cat .dl.down{color:var(--paid)}
+.search{margin:0 0 12px}
+.search[hidden]{display:none}
+.search input{width:100%;font-size:16px;color:var(--text);background:var(--surface);border:1.5px solid transparent;border-radius:999px;padding:10px 16px;outline:none;box-shadow:var(--shadow)}
+.search input:focus{border-color:var(--accent)}
 .day{font-size:12px;color:var(--muted);font-weight:500;margin:16px 0 2px;display:flex;justify-content:space-between}
 .day:first-of-type{margin-top:0}
 .tx{display:flex;gap:12px;align-items:center;padding:11px 0;cursor:pointer}
@@ -181,6 +188,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .owe .pp:first-of-type{border-top:0}
 .splitprev{font-size:11.5px;color:var(--muted);margin-top:4px}
 .err{color:var(--pending);font-size:13px;padding:6px 2px}
+.danger{display:block;width:100%;margin-top:8px;padding:11px;border-radius:999px;color:var(--pending);font-weight:500;font-size:14px;transition:background .2s ease}
+.danger.armed{background:var(--pending-soft);font-weight:600}
+.danger:disabled{opacity:.5}
+.owe .pp{cursor:pointer}
+.owe .pp b::after{content:"›";margin-left:8px;color:var(--muted);font-weight:400}
 .paybill{display:block;width:100%;margin-top:12px;padding:12px;border-radius:14px;background:#055B4E;color:#fff;font-weight:600;font-size:14px;text-shadow:none;transition:background .2s ease,color .2s ease}
 .paybill.armed{background:#EBFF69;color:#055B4E;box-shadow:inset 0 0 0 2px #055B4E}
 .paybill:disabled{background:rgba(255,255,255,.55);color:rgba(20,23,26,.6);font-weight:500;cursor:default}
@@ -203,6 +215,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   </header>
   <div id="msg"></div>
   <div class="chips" id="chips"></div>
+  <div class="search" id="searchBox" hidden><input id="q" type="search" placeholder="ค้นหา ชื่อร้าน หมวด โน้ต บัตร คนหาร" autocomplete="off" enterkeyhint="search"></div>
   <div class="cyc" id="cyc" hidden>
     <button id="prev" aria-label="Previous cycle">‹</button>
     <div class="mid" id="range"></div>
@@ -232,7 +245,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   <div class="panel auto" role="dialog" aria-label="แก้ไขรายการ">
     <div class="phead"><b>แก้ไขรายการ</b><button class="icon-btn" id="closeEdit" aria-label="Close">✕</button></div>
     <div class="scroller"><div id="editBody"></div><div class="err" id="editMsg"></div></div>
-    <div class="composer"><button class="primary" id="editSave">บันทึกการแก้ไข</button></div>
+    <div class="composer"><button class="primary" id="editSave">บันทึกการแก้ไข</button><button class="danger" id="editDel">ลบรายการนี้</button></div>
+  </div>
+</div>
+<div class="overlay" id="oweSheet" hidden>
+  <div class="panel auto" role="dialog" aria-label="รายการค้างจ่ายคืน">
+    <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close">✕</button></div>
+    <div class="scroller"><div class="sec" id="oweBody"></div></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -251,7 +270,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   var OWNER_EMAIL = "kkbnjsth@gmail.com";
   var DEFAULT_CARDS = {}; // real list comes from the Cards tab after sign-in
   try { if (localStorage.getItem("masked")) document.documentElement.classList.add("masked"); } catch (e) {}
-  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25 };
+  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [] };
 
   function $(id){ return document.getElementById(id); }
   function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
@@ -363,13 +382,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     return { ok: true, text: serializeSplit(parts), mine: cost - sum, parts: parts };
   }
   // SPLIT-HELPERS-END
-  function parseRows(values){
+  function parseRows(values, nums){
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [];
       var d = parseDate(r[2]);
       if (!r[0] || !d) continue;
-      var o = { row: i + 1, name: String(r[0]), cost: num(r[1]), date: d, status: String(r[3] || ""), cat: String(r[4] || "Other"), note: String(r[5] || ""), card: String(r[6] || ""), split: String(r[7] || "") }; var ns0 = normalizeSplit(o.cost, o.split); o.parts = ns0.ok ? ns0.parts : parseSplit(o.split); out.push(o);
+      var o = { row: nums ? nums[i] : i + 1, name: String(r[0]), cost: num(r[1]), date: d, status: String(r[3] || ""), cat: String(r[4] || "Other"), note: String(r[5] || ""), card: String(r[6] || ""), split: String(r[7] || "") }; var ns0 = normalizeSplit(o.cost, o.split); o.parts = ns0.ok ? ns0.parts : parseSplit(o.split); out.push(o);
     }
     return out;
   }
@@ -405,6 +424,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
 
   function render(){
+    renderOwe();
     var body = $("body"); body.textContent = "";
     var chips = $("chips"); chips.textContent = "";
     if (!state.rows) { $("cyc").hidden = true; return; }
@@ -424,25 +444,24 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       chips.appendChild(b);
     });
 
+    $("searchBox").hidden = false;
+    // Only the last ~7 months come down at first; going further back (or searching) fetches everything once.
+    if (!state.full && (state.q || state.offset <= -5)) loadAll();
+    if (state.q) { $("cyc").hidden = true; $("due").hidden = true; $("hero").hidden = true; renderSearch(body); return; }
+
     // transactions in the selected cycle(s)
-    var list = [], rangeText = "", subText = "";
+    var list = rowsFor(state.offset, names, isSalary), rangeText = "", subText = "";
     if (isSalary) {
     var sy = cycleFor(state.salaryDay, state.offset);
     rangeText = dstr(sy.start) + " – " + dstr(sy.end);
     subText = (state.offset === 0 ? "รอบเงินเดือนปัจจุบัน" : (state.offset === -1 ? "รอบเงินเดือนก่อนหน้า" : "ย้อนหลัง " + (-state.offset) + " รอบ")) + (state.sel === "Salary" ? " · บัตร + เงินสด" : " · เงินสด");
-    state.rows.forEach(function(r){ if (r.date >= sy.start && r.date <= sy.end && (state.sel === "Salary" || r.card === state.cash)) list.push(r); });
     } else if (state.sel === "All") {
-      names.forEach(function(n){
-        var cy = cycleFor(state.cards[n] || 28, state.offset);
-        state.rows.forEach(function(r){ if (r.card === n && r.date >= cy.start && r.date <= cy.end) list.push(r); });
-      });
       rangeText = state.offset === 0 ? "รอบปัจจุบัน" : (state.offset === -1 ? "รอบก่อนหน้า" : state.offset + " รอบ");
       subText = "รวมทุกบัตร (แต่ละบัตรตามรอบของตัวเอง)";
     } else {
       var cy = cycleFor(state.cards[state.sel] || 28, state.offset);
       rangeText = dstr(cy.start) + " – " + dstr(cy.end);
       subText = state.offset === 0 ? "รอบปัจจุบัน" : (state.offset === -1 ? "รอบก่อนหน้า" : "ย้อนหลัง " + (-state.offset) + " รอบ");
-      state.rows.forEach(function(r){ if (r.card === state.sel && r.date >= cy.start && r.date <= cy.end) list.push(r); });
     }
     $("cyc").hidden = false;
     $("range").textContent = rangeText;
@@ -513,15 +532,17 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       hero.appendChild(strip);
     }
 
+    if (state.offset === 0) renderDue(body);
     var owed = {}, owedTotal = 0;
     state.rows.forEach(function(r){ others(r.parts).forEach(function(p){
       if (!p.done && p.amt) { var o = owed[p.name] || (owed[p.name] = { amt: 0, n: 0 }); o.amt += p.amt; o.n++; owedTotal += p.amt; }
     }); });
     var owedNames = Object.keys(owed);
     if (owedNames.length) {
-      var ow = el("div", "sec owe"), oh = el("h2", null, "ค้างจ่ายคืน"); oh.appendChild(el("small", null, "รวม ฿" + fmt(owedTotal))); ow.appendChild(oh);
+      var ow = el("div", "sec owe"), oh = el("h2", null, "ค้างจ่ายคืน"); oh.appendChild(el("small", null, "รวม ฿" + fmt(owedTotal) + " · แตะชื่อเพื่อดูรายการ")); ow.appendChild(oh);
       owedNames.sort(function(a, b){ return owed[b].amt - owed[a].amt; }).forEach(function(n){
-        var pr = el("div", "pp"); pr.appendChild(el("span", null, n + " · " + owed[n].n + " รายการ")); pr.appendChild(el("b", null, "฿" + fmt(owed[n].amt))); ow.appendChild(pr);
+        var pr = el("div", "pp"); pr.appendChild(el("span", null, n + " · " + owed[n].n + " รายการ")); pr.appendChild(el("b", null, "฿" + fmt(owed[n].amt)));
+        pr.onclick = function(){ openOwe(n); }; ow.appendChild(pr);
       });
       body.appendChild(ow);
     }
@@ -535,31 +556,42 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 
     if (!shown.length) { var e = el("div", "sec"); e.appendChild(el("div", "empty", list.length ? "ไม่มีรายการที่ตรงกับตัวกรองนี้" : "ไม่มีรายการในรอบนี้")); body.appendChild(e); return; }
 
-    var cs = el("div", "sec"); cs.appendChild(el("h2", null, "ตามหมวด"));
+    var prevCats = {}, prevTotal = 0;
+    rowsFor(state.offset - 1, names, isSalary).forEach(function(r){
+      if (state.filter === "all" || (state.filter === "paid") === isPaid(r)) { prevCats[r.cat] = (prevCats[r.cat] || 0) + r.cost; prevTotal += r.cost; }
+    });
+    var cs = el("div", "sec"), ch = el("h2", null, "ตามหมวด"), chs = el("small", null, "รอบก่อน ");
+    chs.appendChild(el("span", "tot", "฿" + fmt(prevTotal))); ch.appendChild(chs); cs.appendChild(ch);
     Object.keys(cats).sort(function(a, b){ return cats[b] - cats[a]; }).forEach(function(k){
       var w = el("div", "cat"), row = el("div", "row");
       row.appendChild(el("span", null, catIcon(k) + " " + k));
       row.appendChild(el("span", null, "฿" + fmt(cats[k]) + " · " + Math.round(cats[k] / (shownTotal || 1) * 100) + "%"));
       var tr = el("div", "track"), f = el("div", "fill"); f.style.width = Math.max(2, cats[k] / (shownTotal || 1) * 100) + "%";
-      tr.appendChild(f); w.appendChild(row); w.appendChild(tr); cs.appendChild(w);
+      tr.appendChild(f); w.appendChild(row); w.appendChild(tr); w.appendChild(deltaEl(cats[k], prevCats[k] || 0)); cs.appendChild(w);
     });
     body.appendChild(cs);
 
     var ls = el("div", "sec"); var h2 = el("h2", null, "รายการ (" + shown.length + ")"); h2.appendChild(el("small", null, "แตะแถวเพื่อแก้ไข · แตะสถานะเพื่อสลับ")); ls.appendChild(h2);
-    var sorted = shown.slice().sort(function(a, b){ return b.date - a.date || b.row - a.row; });
+    txList(ls, shown, state.sel === "All" || state.sel === "Salary", false);
+    body.appendChild(ls);
+  }
+
+  // Rows grouped by day (newest first). Tap a row to edit, tap the pill to flip Pending/Paid.
+  function txList(sec, rows, showCard, withYear){
+    var sorted = rows.slice().sort(function(a, b){ return b.date - a.date || b.row - a.row; });
     var lastKey = null, dayTotals = {};
     sorted.forEach(function(r){ var k = r.date.getTime(); dayTotals[k] = (dayTotals[k] || 0) + r.cost; });
     sorted.forEach(function(r){
       var key = r.date.getTime();
       if (key !== lastKey) {
-        var dh = el("div", "day"); dh.appendChild(el("span", null, dshort(r.date))); dh.appendChild(el("span", null, "฿" + fmt(dayTotals[key])));
-        ls.appendChild(dh); lastKey = key;
+        var dh = el("div", "day"); dh.appendChild(el("span", null, dshort(r.date) + (withYear ? " " + r.date.getFullYear() : ""))); dh.appendChild(el("span", null, "฿" + fmt(dayTotals[key])));
+        sec.appendChild(dh); lastKey = key;
       }
       var tx = el("div", "tx");
       tx.appendChild(el("div", "ico", catIcon(r.cat)));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
-      l.appendChild(el("div", "note", r.cat + (r.note ? " · " + r.note : "") + ((state.sel === "All" || state.sel === "Salary") ? " · " + (r.card === state.cash ? "เงินสด" : r.card) : "")));
+      l.appendChild(el("div", "note", r.cat + (r.note ? " · " + r.note : "") + (showCard ? " · " + (r.card === state.cash ? "เงินสด" : r.card) : "")));
       var op = others(r.parts);
       if (op.length) {
         var sumP = op.reduce(function(a, p){ return a + (p.amt || 0); }, 0);
@@ -586,9 +618,99 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       stg.onclick = function(ev){ ev.stopPropagation(); toggleStatus(r); };
       rt.appendChild(stg); tx.appendChild(rt);
       tx.onclick = function(){ openEdit(r); };
-      ls.appendChild(tx);
+      sec.appendChild(tx);
     });
-    body.appendChild(ls);
+  }
+  function deltaEl(cur, prev){
+    var d = cur - prev, e = el("div", "dl");
+    if (prev < 0.005) e.textContent = "ใหม่ในรอบนี้";
+    else if (Math.abs(d) < 0.005) e.textContent = "เท่ารอบก่อน";
+    else { e.classList.add(d > 0 ? "up" : "down"); e.textContent = (d > 0 ? "▲ ฿" : "▼ ฿") + fmt(Math.abs(d)) + " จากรอบก่อน"; }
+    return e;
+  }
+  function rowsFor(offset, names, isSalary){
+    var out = [];
+    if (isSalary) {
+      var sy = cycleFor(state.salaryDay, offset);
+      state.rows.forEach(function(r){ if (r.date >= sy.start && r.date <= sy.end && (state.sel === "Salary" || r.card === state.cash)) out.push(r); });
+    } else if (state.sel === "All") {
+      names.forEach(function(n){
+        var cy = cycleFor(state.cards[n] || 28, offset);
+        state.rows.forEach(function(r){ if (r.card === n && r.date >= cy.start && r.date <= cy.end) out.push(r); });
+      });
+    } else {
+      var cy = cycleFor(state.cards[state.sel] || 28, offset);
+      state.rows.forEach(function(r){ if (r.card === state.sel && r.date >= cy.start && r.date <= cy.end) out.push(r); });
+    }
+    return out;
+  }
+
+  // ---------- Search: every loaded row, all cards and cycles. Every word must match somewhere. ----------
+  function searchHit(r, terms){
+    var hay = [r.name, r.cat, r.note, r.card, r.card === state.cash ? "เงินสด" : "", r.split, fmt(r.cost), fmtAmt(r.cost)].join(" ").toLowerCase();
+    return terms.every(function(t){ return hay.indexOf(t) >= 0; });
+  }
+  function renderSearch(body){
+    var terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+    var hits = state.rows.filter(function(r){ return searchHit(r, terms); }).sort(function(a, b){ return b.date - a.date || b.row - a.row; });
+    var total = hits.reduce(function(a, r){ return a + r.cost; }, 0);
+    var sec = el("div", "sec"), h = el("h2", null, "ผลการค้นหา (" + hits.length + ")"), hs = el("small", null, (state.full ? "ทุกบัตร ทุกรอบ" : "กำลังโหลดรายการเก่า…") + " · รวม ");
+    hs.appendChild(el("span", "tot", "฿" + fmt(total))); h.appendChild(hs); sec.appendChild(h);
+    if (!hits.length) sec.appendChild(el("div", "empty", "ไม่พบรายการ"));
+    else txList(sec, hits.slice(0, 300), true, true);
+    if (hits.length > 300) sec.appendChild(el("div", "empty", "แสดง 300 รายการล่าสุด พิมพ์คำค้นเพิ่มเพื่อให้แคบลง"));
+    body.appendChild(sec);
+  }
+
+  // ---------- Recurring tab: A=List, B=Cost, C=Category, D=Card, E=Day, F=Start, G=Months (blank = no end), H=Note ----------
+  function parseRecurring(values){
+    var out = [];
+    for (var i = 1; i < values.length; i++) {
+      var r = values[i] || [], start = parseDate(r[5]);
+      if (!r[0] || !start || !r[3]) continue;
+      out.push({ name: String(r[0]), cost: String(r[1]).trim() === "" ? NaN : num(r[1]), cat: String(r[2] || "Other"), card: String(r[3]),
+        day: parseInt(r[4], 10) || start.getDate(), start: start, months: parseInt(r[6], 10) || 0, note: String(r[7] || "") });
+    }
+    return out;
+  }
+  // Occurrences in the last two months that are due (on or before today) and have no Data row with the
+  // same name + card in that month yet. Nothing is written until the user saves the prefilled draft.
+  function dueRecurring(){
+    var t = today(), out = [];
+    (state.recurring || []).forEach(function(c){
+      var n = (t.getFullYear() - c.start.getFullYear()) * 12 + t.getMonth() - c.start.getMonth();
+      for (var k = Math.max(0, n - 1); k <= n; k++) {
+        if (c.months && k >= c.months) break;
+        var y = c.start.getFullYear(), m = c.start.getMonth() + k;
+        var d = new Date(y, m, Math.min(c.day, new Date(y, m + 1, 0).getDate()));
+        if (d < c.start || d > t) continue;
+        var done = (state.rows || []).some(function(x){ return x.name === c.name && x.card === c.card && x.date.getFullYear() === d.getFullYear() && x.date.getMonth() === d.getMonth(); });
+        if (!done) out.push({ c: c, date: d, label: c.months ? "งวด " + (k + 1) + "/" + c.months : "" });
+      }
+    });
+    return out.sort(function(a, b){ return a.date - b.date; });
+  }
+  function addDue(it){
+    var r = { name: it.c.name, cost: it.c.cost, date: dfmt(it.date), status: it.c.card === state.cash ? "Paid" : "Pending", category: it.c.cat,
+      note: [it.c.note, it.label].filter(Boolean).join(" · "), split: "", card: it.c.card };
+    if (!draft.some(function(x){ return x.name === r.name && x.card === r.card && x.date === r.date; })) draft.push(r);
+  }
+  function renderDue(body){
+    var due = dueRecurring();
+    if (!due.length) return;
+    var sec = el("div", "sec"), h = el("h2", null, "ถึงกำหนด ยังไม่บันทึก"); h.appendChild(el("small", null, "แตะเพื่อเพิ่ม · จากแท็บ Recurring")); sec.appendChild(h);
+    due.forEach(function(it){
+      var tx = el("div", "tx");
+      tx.appendChild(el("div", "ico", catIcon(it.c.cat)));
+      var l = el("div", "l"); l.appendChild(el("div", "n", it.c.name));
+      l.appendChild(el("div", "note", [dshort(it.date), it.c.card === state.cash ? "เงินสด" : it.c.card, it.label].filter(Boolean).join(" · ")));
+      tx.appendChild(l);
+      var rt = el("div", "rt"); rt.appendChild(el("div", "c", isFinite(it.c.cost) ? "฿" + fmt(it.c.cost) : "ใส่ยอดเอง")); tx.appendChild(rt);
+      tx.onclick = function(){ addDue(it); openSheet(); };
+      sec.appendChild(tx);
+    });
+    if (due.length > 1) { var all = el("button", "ghost", "เพิ่มทั้งหมด " + due.length + " รายการ"); all.onclick = function(){ due.forEach(addDue); openSheet(); }; sec.appendChild(all); }
+    body.appendChild(sec);
   }
 
   var CARD_IMG = {}; // filled from getData (server CardImages.js) after sign-in
@@ -759,10 +881,75 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     gg.appendChild(field("แบ่งกับ", splitField(editCopy), true));
     gg.appendChild(field("Note", textInput(editCopy, "note"), true));
     g.appendChild(gg); b.appendChild(g);
-    $("editSave").disabled = false; $("editSave").textContent = "บันทึกการแก้ไข";
+    $("editSave").disabled = false; $("editSave").textContent = "บันทึกการแก้ไข"; resetDel();
     $("editSheet").hidden = false; document.body.style.overflow = "hidden";
   }
-  function closeEdit(){ $("editSheet").hidden = true; document.body.style.overflow = ""; editing = null; }
+  function closeEdit(){ $("editSheet").hidden = true; document.body.style.overflow = ""; editing = null; resetDel(); }
+  // Delete = two taps (like the bill button). The server re-checks the row first (STALE) and shifts only A..H up.
+  // Undo re-adds the same values at the bottom of the sheet (the page sorts by date, so it shows in the same place).
+  var delArm = false, delTimer = null;
+  function resetDel(){ delArm = false; clearTimeout(delTimer); var b = $("editDel"); b.classList.remove("armed"); b.disabled = false; b.textContent = "ลบรายการนี้"; }
+  function deleteEdit(){
+    if (!editing || writing) return;
+    var b = $("editDel");
+    if (!delArm) { delArm = true; b.classList.add("armed"); b.textContent = "แตะอีกครั้งเพื่อยืนยันการลบ"; delTimer = setTimeout(resetDel, 4000); return; }
+    clearTimeout(delTimer);
+    var r = editing;
+    var vals = { name: r.name, cost: r.cost, date: dfmt(r.date), status: isPaid(r) ? "Paid" : "Pending", category: r.cat, note: r.note, card: r.card, split: r.split || "" };
+    writing = true; b.disabled = true; b.textContent = "กำลังลบ…"; $("editMsg").textContent = "";
+    gs("deleteRow", { row: r.row, orig: { name: r.name, cost: r.cost, date: dfmt(r.date) } }).then(function(){
+      state.rows = state.rows.filter(function(x){ return x !== r; });
+      state.rows.forEach(function(x){ if (x.row > r.row) x.row--; });
+      writing = false; closeEdit(); render();
+      showToast("ลบ " + r.name + " แล้ว", function(){
+        if (writing) return;
+        writing = true;
+        gs("addRows", [vals]).then(function(){ showToast("กู้คืน " + r.name + " แล้ว ✓"); }).catch(function(e){ showToast(writeErrCopy(e)); })
+          .then(function(){ writing = false; load(); });
+      });
+      load();
+    }).catch(function(e){ writing = false; resetDel(); $("editMsg").textContent = writeErrCopy(e); });
+  }
+
+  // ---------- Who owes me: every unsettled share of one person, across all cycles ----------
+  // Items listed when the panel opened stay listed after being ticked, so a mis-tap can be un-ticked.
+  var owePerson = null, oweKeys = null;
+  function oweItems(){
+    var out = [];
+    (state.rows || []).forEach(function(r){ (r.parts || []).forEach(function(p, idx){
+      if (!isMe(p) && p.name === owePerson && p.amt) out.push({ r: r, p: p, idx: idx, key: r.row + "|" + idx });
+    }); });
+    return out;
+  }
+  function openOwe(name){
+    owePerson = name; oweKeys = {};
+    oweItems().forEach(function(it){ if (!it.p.done) oweKeys[it.key] = 1; });
+    renderOwe(); $("oweSheet").hidden = false; document.body.style.overflow = "hidden";
+  }
+  function closeOwe(){ owePerson = null; $("oweSheet").hidden = true; document.body.style.overflow = ""; }
+  function renderOwe(){
+    if (!owePerson) return;
+    var items = oweItems().filter(function(it){ return oweKeys[it.key]; }).sort(function(a, b){ return b.r.date - a.r.date || b.r.row - a.r.row; });
+    var left = items.filter(function(it){ return !it.p.done; }).reduce(function(a, it){ return a + it.p.amt; }, 0);
+    $("oweTitle").textContent = owePerson + " ค้าง ฿" + fmt(left);
+    var box = $("oweBody"); box.textContent = "";
+    var h = el("h2", null, items.length + " รายการ"); h.appendChild(el("small", null, "แตะยอดเพื่อสลับว่าจ่ายคืนแล้วหรือยัง")); box.appendChild(h);
+    if (!items.length) { box.appendChild(el("div", "empty", "ไม่มีรายการค้าง")); return; }
+    items.forEach(function(it){
+      var r = it.r, tx = el("div", "tx");
+      tx.style.cursor = "default";
+      tx.appendChild(el("div", "ico", catIcon(r.cat)));
+      var l = el("div", "l");
+      l.appendChild(el("div", "n", r.name));
+      l.appendChild(el("div", "note", dshort(r.date) + " " + r.date.getFullYear() + " · " + (r.card === state.cash ? "เงินสด" : r.card) + " · ทั้งบิล ฿" + fmt(r.cost)));
+      tx.appendChild(l);
+      var rt = el("div", "rt");
+      var pb = el("button", "part" + (it.p.done ? " done" : ""), "฿" + fmtAmt(it.p.amt) + (it.p.done ? " ✓" : ""));
+      pb.onclick = function(){ toggleSplit(r, it.idx); };
+      rt.appendChild(pb); tx.appendChild(rt);
+      box.appendChild(tx);
+    });
+  }
   function saveEdit(){
     if (!editing || writing) return;
     var c = editCopy, d = parseDate(c.date);
@@ -791,9 +978,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var o = document.createElement("option"); o.value = r.name; dl.appendChild(o);
     });
   }
+  function sinceDate(){ var t = today(); return new Date(t.getFullYear(), t.getMonth() - 7, 1); }
+  function loadAll(){ if (state.wantAll) return; state.wantAll = true; load(); }
   function load(){
-    return gs("getData").then(function(res){
-      state.rows = parseRows(res.rows || []);
+    return gs("getData", state.wantAll ? {} : { since: dfmt(sinceDate()) }).then(function(res){
+      state.rows = parseRows(res.rows || [], res.rowNums);
+      state.full = !res.partial;
+      state.recurring = parseRecurring(res.recurring || []);
     state.cash = res.cash || state.cash;
     state.salaryDay = res.salaryDay || state.salaryDay;
       var c = parseCards(res.cards || []); if (c) state.cards = c;
@@ -801,6 +992,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       state.bills = parseBills(res.bills || []);
       state.storedAt = res.at; showError(null); setUpdated(); fillMerchants(); render();
     }).catch(function(e){
+      if (!state.full) state.wantAll = false;
       if (!state.rows) { showError(e); $("updated").textContent = "โหลดไม่สำเร็จ"; }
       else $("updated").textContent = "รีเฟรชไม่สำเร็จ · แสดงข้อมูลล่าสุดที่มี";
     }).then(function(){ $("refresh").classList.remove("spin"); });
@@ -926,6 +1118,9 @@ draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.c
   $("refresh").onclick = function(){ $("refresh").classList.add("spin"); load(); };
   $("closeEdit").onclick = closeEdit;
   $("editSave").onclick = saveEdit;
+  $("editDel").onclick = deleteEdit;
+  $("closeOwe").onclick = closeOwe;
+  $("q").oninput = function(){ state.q = this.value.trim(); render(); };
   $("fab").onclick = openSheet;
   $("closeSheet").onclick = closeSheet;
   $("saveBtn").onclick = saveDraft;
