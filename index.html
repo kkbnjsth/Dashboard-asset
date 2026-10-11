@@ -54,13 +54,36 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .icon-btn{width:40px;height:40px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;font-size:17px}
 .icon-btn.spin{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;margin-bottom:10px;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 6px;margin-bottom:4px}
+.chips[hidden]{display:none}
 .chip{flex:none;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);font-size:14px;font-weight:600;color:var(--text)}
+.chip[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.hbtns{display:flex;gap:8px}
+.icon-btn[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.cardpick{display:flex;align-items:center;gap:10px;max-width:100%;padding:6px 2px;margin:2px 0 8px;text-align:left}
+.cardpick[hidden]{display:none}
+.cardpick .nm{min-width:0;font-size:20px;font-weight:600;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cardpick .caret{color:var(--muted);font-size:11px;margin-left:-2px}
+.wrap{overflow-x:clip}
+.hero.swipe{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.dots{display:flex;justify-content:center;align-items:center;gap:6px;margin:-4px 0 14px;font-size:11.5px;color:var(--muted)}
+.dots[hidden]{display:none}
+.dots i{width:6px;height:6px;border-radius:99px;background:var(--line);transition:width .25s ease,background .25s ease}
+.dots i.on{width:18px;background:var(--text)}
+.clist{display:flex;flex-direction:column;gap:6px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.clist button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);text-align:left}
+.clist button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.clist .txt{flex:1;min-width:0}
+.clist .txt b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clist .txt small{display:block;font-size:11.5px;color:var(--muted)}
+.clist .txt small.warn{color:var(--pending);font-weight:600}
+.clist .txt small.ok{color:var(--paid)}
+.clist .tot{font-size:14px;font-weight:600}
 .cthumb{width:32px;height:20px;object-fit:cover;border-radius:3px;flex:none;display:block}
+.cthumb.lg{width:44px;height:28px;border-radius:4px}
+.cthumb.ph{background:var(--line)}
 .cthumb.sm{width:26px;height:16px}
 .strip .nm{display:flex;align-items:center;gap:8px}
-.chip[aria-pressed="true"]{background:var(--text);color:var(--bg)}
 .cyc{display:flex;align-items:center;justify-content:space-between;padding:2px 2px;margin-bottom:12px}
 .cyc button{width:38px;height:38px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);font-size:18px}
 .cyc button:disabled{opacity:.35}
@@ -86,7 +109,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .eye .slash{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .3s ease}
 .masked .eye .slash{stroke-dashoffset:0}
 .hero .amt,.split b,.shareline,.stamp small,.owe h2 small,.owe .pp b,.cat .row span:last-child,.day span:last-child,.tx .c,.mine,.part,.tot,.cat .dl{transition:filter .35s ease,opacity .35s ease}
-.masked .hero .amt,.masked .split b,.masked .shareline,.masked .stamp small,.masked .owe h2 small,.masked .owe .pp b,.masked .cat .row span:last-child,.masked .day span:last-child,.masked .tx .c,.masked .mine,.masked .part,.masked .tot,.masked .cat .dl{filter:blur(.32em);opacity:.8;user-select:none}
+.masked .hero .amt,.masked .split b,.masked .shareline,.masked .stamp small,.masked .owe h2 small,.masked .owe .pp b,.masked .cat .row span:last-child,.masked .day span:last-child,.masked .tx .c,.masked .mine,.masked .part,.masked .tot,.masked .cat .dl,.masked .clist .tot,.masked .cardpick .tot,.masked .clist small.warn{filter:blur(.32em);opacity:.8;user-select:none}
 .stamp{flex:none;transform:rotate(3deg);border:2px solid currentColor;border-radius:12px;padding:5px 11px;text-align:center;font-weight:600;font-size:12.5px;line-height:1.25;color:#055B4E;background:rgba(255,255,255,.92);text-shadow:none}
 .stamp small{display:block;font-weight:400;font-size:10.5px;opacity:.9}
 .stamp.warn{color:#a85f00}
@@ -140,6 +163,15 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:28px;line-height:1;box-shadow:0 8px 22px rgba(18,161,80,.38);z-index:20}
 .overlay{position:fixed;inset:0;background:rgba(10,14,12,.5);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .overlay[hidden]{display:none}
+.overlay.slide:not([hidden]){animation:ovIn .22s ease}
+.overlay.slide:not([hidden]) .panel{animation:panelIn .34s cubic-bezier(.22,1,.36,1)}
+.overlay.slide.closing{animation:ovOut .2s ease forwards}
+.overlay.slide.closing .panel{animation:panelOut .2s cubic-bezier(.4,0,1,1) forwards}
+@keyframes ovIn{from{background:rgba(10,14,12,0)}}
+@keyframes ovOut{to{background:rgba(10,14,12,0)}}
+@keyframes panelIn{from{transform:translateY(100%)}}
+@keyframes panelOut{to{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){.overlay.slide,.overlay.slide .panel{animation:none!important}}
 .panel{background:var(--bg);width:100%;max-width:560px;height:92%;border-radius:26px 26px 0 0;display:flex;flex-direction:column;overflow:hidden}
 .panel.auto{height:auto;max-height:92%}
 .phead{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px}
@@ -211,11 +243,15 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       <h1>Card Dashboard</h1>
       <div class="sub" id="updated">กำลังโหลด…</div>
     </div>
-    <button class="icon-btn" id="refresh" aria-label="Refresh">↻</button>
+    <div class="hbtns">
+      <button class="icon-btn" id="searchBtn" aria-label="ค้นหา" aria-pressed="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+      <button class="icon-btn" id="refresh" aria-label="Refresh">↻</button>
+    </div>
   </header>
   <div id="msg"></div>
-  <div class="chips" id="chips"></div>
   <div class="search" id="searchBox" hidden><input id="q" type="search" placeholder="ค้นหา ชื่อร้าน หมวด โน้ต บัตร คนหาร" autocomplete="off" enterkeyhint="search"></div>
+  <div class="chips" id="seg" role="group" aria-label="มุมมอง" hidden></div>
+  <button class="cardpick" id="cardpick" aria-haspopup="dialog" hidden></button>
   <div class="cyc" id="cyc" hidden>
     <button id="prev" aria-label="Previous cycle">‹</button>
     <div class="mid" id="range"></div>
@@ -226,6 +262,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     <div class="dlbl"><span id="dl"></span><span id="dr"></span></div>
   </div>
   <div class="hero" id="hero" hidden></div>
+  <div class="dots" id="dots" aria-hidden="true" hidden></div>
   <div id="body"></div>
   <div class="foot">อ่านจาก Google Sheets · รีเฟรชอัตโนมัติทุก 1 นาที · เขียนเฉพาะตอนกดบันทึก</div>
 </div>
@@ -252,6 +289,12 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   <div class="panel auto" role="dialog" aria-label="รายการค้างจ่ายคืน">
     <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close">✕</button></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
+  </div>
+</div>
+<div class="overlay slide" id="cardSheet" hidden>
+  <div class="panel auto" role="dialog" aria-label="เลือกบัตร">
+    <div class="phead"><b>เลือกบัตร</b><button class="icon-btn" id="closeCards" aria-label="Close">✕</button></div>
+    <div class="scroller"><div class="clist" id="cardList"></div></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -426,8 +469,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function render(){
     renderOwe();
     var body = $("body"); body.textContent = "";
-    var chips = $("chips"); chips.textContent = "";
-    if (!state.rows) { $("cyc").hidden = true; return; }
+    var seg = $("seg"); seg.textContent = "";
+    if (!state.rows) { $("cyc").hidden = true; seg.hidden = true; $("cardpick").hidden = true; return; }
 
     var names = Object.keys(state.cards);
     state.rows.forEach(function(r){ if (r.card && r.card !== state.cash && names.indexOf(r.card) < 0) names.push(r.card); });
@@ -435,16 +478,42 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     if (!state.sel || options.indexOf(state.sel) < 0) state.sel = names[0] || "All";
     var isSalary = state.sel === state.cash || state.sel === "Salary";
 
-    options.forEach(function(n){
-      var b = el("button", "chip");
-      if (CARD_IMG[n]) { var im = document.createElement("img"); im.className = "cthumb"; im.src = CARD_IMG[n]; im.alt = ""; b.appendChild(im); }
-      b.appendChild(document.createTextNode(n === "All" ? "ทุกบัตร" : n === state.cash ? "เงินสด" : n === "Salary" ? "ทั้งหมด" : n));
-      b.setAttribute("aria-pressed", String(n === state.sel));
-      b.onclick = function(){ state.sel = n; state.offset = 0; render(); };
-      chips.appendChild(b);
+    // Fixed views up top; the individual card is picked from a bottom sheet so the bar never grows with the card count.
+    var isCard = names.indexOf(state.sel) >= 0;
+    if (isCard) state.lastCard = state.sel;
+    var views = names.length ? [["card", "บัตร"], ["All", "ทุกบัตร"], [state.cash, "เงินสด"], ["Salary", "ทั้งหมด"]] : [["All", "ทุกบัตร"], [state.cash, "เงินสด"], ["Salary", "ทั้งหมด"]];
+    views.forEach(function(v){
+      var b = el("button", "chip", v[1]);
+      b.setAttribute("aria-pressed", String(v[0] === "card" ? isCard : v[0] === state.sel));
+      b.onclick = function(){
+        if (v[0] === "card") { if (isCard) { openCards(names); return; } state.sel = names.indexOf(state.lastCard) >= 0 ? state.lastCard : names[0]; }
+        else state.sel = v[0];
+        state.offset = 0; render();
+      };
+      seg.appendChild(b);
     });
+    seg.hidden = false;
+    var pick = $("cardpick"); pick.textContent = ""; pick.hidden = !isCard;
+    if (isCard) {
+      pick.appendChild(cardThumb(state.sel, "cthumb lg"));
+      pick.appendChild(el("span", "nm", state.sel));
+      pick.appendChild(el("span", "caret", "▼"));
+      pick.setAttribute("aria-label", "เปลี่ยนบัตร (ตอนนี้ " + state.sel + ")");
+      pick.onclick = function(){ openCards(names); };
+    }
+    if ($("cardSheet").hidden === false) renderCards(names);
 
-    $("searchBox").hidden = false;
+    $("searchBox").hidden = !(state.searchOpen || state.q);
+    $("searchBtn").setAttribute("aria-pressed", String(!$("searchBox").hidden));
+    // Swipe the hero left/right to step through cards (card view only); the dots show where you are.
+    state.swipeCards = isCard && names.length > 1 && !state.q ? names : null;
+    $("hero").classList.toggle("swipe", !!state.swipeCards);
+    var dots = $("dots"); dots.textContent = ""; dots.hidden = !state.swipeCards;
+    if (state.swipeCards) {
+      var at = names.indexOf(state.sel);
+      if (names.length > 8) dots.textContent = (at + 1) + " / " + names.length;
+      else names.forEach(function(n, i){ dots.appendChild(el("i", i === at ? "on" : null)); });
+    }
     // Only the last ~7 months come down at first; going further back (or searching) fetches everything once.
     if (!state.full && (state.q || state.offset <= -5)) loadAll();
     if (state.q) { $("cyc").hidden = true; $("due").hidden = true; $("hero").hidden = true; renderSearch(body); return; }
@@ -754,6 +823,42 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     var d = Math.round((cy.end - t) / 86400000);
     return { kind: "info", title: d === 0 ? "ตัดรอบวันนี้" : "ตัดรอบอีก " + d + " วัน", sub: dstr(cy.end) };
+  }
+
+  // ---------- Card picker (bottom sheet) ----------
+  function cardRows(card, cy){ return state.rows.filter(function(r){ return r.card === card && r.date >= cy.start && r.date <= cy.end; }); }
+  function cardThumb(card, cls){
+    if (!CARD_IMG[card]) return el("span", cls + " ph");
+    var im = document.createElement("img"); im.className = cls; im.src = CARD_IMG[card]; im.alt = ""; return im;
+  }
+  function renderCards(names){
+    var box = $("cardList"); box.textContent = "";
+    names.forEach(function(n){
+      var day = state.cards[n] || 28, cy = cycleFor(day, 0), prev = cycleFor(day, -1);
+      var rows = cardRows(n, cy), total = rows.reduce(function(a, r){ return a + r.cost; }, 0);
+      var pRows = cardRows(n, prev), pTotal = pRows.reduce(function(a, r){ return a + r.cost; }, 0);
+      // An unpaid bill from last cycle matters more than this cycle's countdown.
+      var st = stampFor(prev, n, pTotal, pRows.length);
+      if (st.kind !== "warn") st = stampFor(cy, n, total, rows.length);
+      else st = { kind: "warn", title: "รอจ่ายบิลรอบก่อน " + st.sub };
+      var b = el("button"); b.setAttribute("aria-pressed", String(n === state.sel));
+      b.appendChild(cardThumb(n, "cthumb lg"));
+      var tx = el("div", "txt"); tx.appendChild(el("b", null, n)); tx.appendChild(el("small", st.kind, st.title)); b.appendChild(tx);
+      b.appendChild(el("span", "tot", "฿" + fmt(total)));
+      b.onclick = function(){ closeCards(); state.sel = n; state.offset = 0; render(); };
+      box.appendChild(b);
+    });
+  }
+  // The sheet slides down before it is hidden (see .overlay.slide.closing).
+  var cardsTimer = null;
+  function openCards(names){
+    var s = $("cardSheet"); clearTimeout(cardsTimer); s.classList.remove("closing");
+    renderCards(names); s.hidden = false; document.body.style.overflow = "hidden";
+  }
+  function closeCards(){
+    var s = $("cardSheet"); if (s.hidden || s.classList.contains("closing")) return;
+    s.classList.add("closing"); document.body.style.overflow = "";
+    cardsTimer = setTimeout(function(){ s.hidden = true; s.classList.remove("closing"); }, 200);
   }
 
 
@@ -1120,7 +1225,68 @@ draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.c
   $("editSave").onclick = saveEdit;
   $("editDel").onclick = deleteEdit;
   $("closeOwe").onclick = closeOwe;
+  $("closeCards").onclick = closeCards;
+  $("cardSheet").onclick = function(e){ if (e.target === this) closeCards(); };
   $("q").oninput = function(){ state.q = this.value.trim(); render(); };
+  $("searchBtn").onclick = function(){
+    if (state.searchOpen || state.q) { state.searchOpen = false; state.q = ""; $("q").value = ""; render(); return; }
+    state.searchOpen = true; render(); $("q").focus();
+  };
+
+  // ---------- Swipe the hero to change card ----------
+  // The hero follows the finger; past the threshold it slides out, the next card renders, and the new hero slides in
+  // from the other side. The cycle offset is kept so cards can be compared for the same period.
+  (function(){
+    var hero = $("hero"), x0 = 0, y0 = 0, t0 = 0, dx = 0, mode = null, busy = false, ease = "cubic-bezier(.22,1,.36,1)";
+    var HERO_VARS = ["--hd", "--hm", "--hl", "--scr", "--hmc"];
+    var HERO_TR = "--hd .7s cubic-bezier(.4,0,.2,1),--hm .7s cubic-bezier(.4,0,.2,1),--hl .7s cubic-bezier(.4,0,.2,1),--scr .7s ease,--hmc .7s ease,color .5s ease";
+    function move(x, tr){ hero.style.transition = tr || "none"; hero.style.transform = x ? "translateX(" + x + "px)" : ""; }
+    function done(){ hero.style.transition = ""; hero.style.transform = ""; busy = false; }
+    hero.addEventListener("pointerdown", function(e){
+      if (busy || !state.swipeCards || e.pointerType === "mouse" && e.button !== 0) return;
+      x0 = e.clientX; y0 = e.clientY; t0 = e.timeStamp; dx = 0; mode = "maybe";
+    });
+    hero.addEventListener("pointermove", function(e){
+      if (!mode) return;
+      var mx = e.clientX - x0, my = e.clientY - y0;
+      if (mode === "maybe") {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        if (Math.abs(mx) <= Math.abs(my)) { mode = null; return; } // vertical = page scroll
+        mode = "drag"; hero.setPointerCapture(e.pointerId);
+      }
+      var names = state.swipeCards, i = names.indexOf(state.sel);
+      var edge = (mx > 0 && i === 0) || (mx < 0 && i === names.length - 1);
+      dx = edge ? mx * 0.3 : mx; // rubber-band at the first/last card
+      move(dx);
+    });
+    function end(e){
+      if (mode !== "drag") { mode = null; return; }
+      mode = null;
+      var names = state.swipeCards, i = names.indexOf(state.sel), w = hero.offsetWidth;
+      var fast = Math.abs(dx) > 30 && Math.abs(dx) / Math.max(1, e.timeStamp - t0) > 0.5;
+      var j = (Math.abs(dx) > w * 0.28 || fast) ? i + (dx < 0 ? 1 : -1) : i;
+      if (e.type === "pointercancel" || j < 0 || j >= names.length || j === i) { move(0, "transform .3s " + ease); setTimeout(done, 300); return; }
+      busy = true; var dir = dx < 0 ? -1 : 1;
+      move(dir * (w + 24), "transform .18s ease-in");
+      setTimeout(function(){
+        // render() swaps the gradient instantly while the hero is off-screen, so put the old card's colours back
+        // and let them blend into the new card's while it slides in (same timing as the .hero CSS transition).
+        var old = HERO_VARS.map(function(v){ return hero.style.getPropertyValue(v); });
+        state.sel = names[j]; render();
+        var nu = HERO_VARS.map(function(v){ return hero.style.getPropertyValue(v); });
+        move(-dir * (w + 24));
+        HERO_VARS.forEach(function(v, k){ hero.style.setProperty(v, old[k]); });
+        hero.offsetWidth; // commit the start position and colours before animating in
+        move(0, "transform .32s " + ease + "," + HERO_TR);
+        HERO_VARS.forEach(function(v, k){ hero.style.setProperty(v, nu[k]); });
+        setTimeout(done, 320);
+      }, 180);
+    }
+    hero.addEventListener("pointerup", end);
+    hero.addEventListener("pointercancel", end);
+    // A drag must not also count as a tap on the buttons inside the hero.
+    hero.addEventListener("click", function(e){ if (Math.abs(dx) > 8) { e.stopPropagation(); e.preventDefault(); dx = 0; } }, true);
+  })();
   $("fab").onclick = openSheet;
   $("closeSheet").onclick = closeSheet;
   $("saveBtn").onclick = saveDraft;
