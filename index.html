@@ -268,7 +268,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 </div>
 
 <button class="fab" id="fab" aria-label="เพิ่มรายการ">＋</button>
-<div class="overlay" id="sheet" hidden>
+<div class="overlay slide" id="sheet" hidden>
   <div class="panel" role="dialog" aria-label="เพิ่มรายการ">
     <div class="phead"><b>เพิ่มรายการ</b><button class="icon-btn" id="closeSheet" aria-label="Close">✕</button></div>
     <div class="scroller"><div id="draftBox"></div></div>
@@ -278,14 +278,14 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     </div>
   </div>
 </div>
-<div class="overlay" id="editSheet" hidden>
+<div class="overlay slide" id="editSheet" hidden>
   <div class="panel auto" role="dialog" aria-label="แก้ไขรายการ">
     <div class="phead"><b>แก้ไขรายการ</b><button class="icon-btn" id="closeEdit" aria-label="Close">✕</button></div>
     <div class="scroller"><div id="editBody"></div><div class="err" id="editMsg"></div></div>
     <div class="composer"><button class="primary" id="editSave">บันทึกการแก้ไข</button><button class="danger" id="editDel">ลบรายการนี้</button></div>
   </div>
 </div>
-<div class="overlay" id="oweSheet" hidden>
+<div class="overlay slide" id="oweSheet" hidden>
   <div class="panel auto" role="dialog" aria-label="รายการค้างจ่ายคืน">
     <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close">✕</button></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
@@ -849,17 +849,19 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       box.appendChild(b);
     });
   }
-  // The sheet slides down before it is hidden (see .overlay.slide.closing).
-  var cardsTimer = null;
-  function openCards(names){
-    var s = $("cardSheet"); clearTimeout(cardsTimer); s.classList.remove("closing");
-    renderCards(names); s.hidden = false; document.body.style.overflow = "hidden";
+  // Bottom sheets slide up on open and slide down before they are hidden (see .overlay.slide).
+  var sheetTimers = {};
+  function showSheet(id){
+    var s = $(id); clearTimeout(sheetTimers[id]); s.classList.remove("closing");
+    s.hidden = false; document.body.style.overflow = "hidden";
   }
-  function closeCards(){
-    var s = $("cardSheet"); if (s.hidden || s.classList.contains("closing")) return;
+  function hideSheet(id){
+    var s = $(id); if (s.hidden || s.classList.contains("closing")) return;
     s.classList.add("closing"); document.body.style.overflow = "";
-    cardsTimer = setTimeout(function(){ s.hidden = true; s.classList.remove("closing"); }, 200);
+    sheetTimers[id] = setTimeout(function(){ s.hidden = true; s.classList.remove("closing"); }, 200);
   }
+  function openCards(names){ renderCards(names); showSheet("cardSheet"); }
+  function closeCards(){ hideSheet("cardSheet"); }
 
 
   // ---------- Edit existing rows ----------
@@ -987,9 +989,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     gg.appendChild(field("Note", textInput(editCopy, "note"), true));
     g.appendChild(gg); b.appendChild(g);
     $("editSave").disabled = false; $("editSave").textContent = "บันทึกการแก้ไข"; resetDel();
-    $("editSheet").hidden = false; document.body.style.overflow = "hidden";
+    showSheet("editSheet");
   }
-  function closeEdit(){ $("editSheet").hidden = true; document.body.style.overflow = ""; editing = null; resetDel(); }
+  function closeEdit(){ hideSheet("editSheet"); editing = null; resetDel(); }
   // Delete = two taps (like the bill button). The server re-checks the row first (STALE) and shifts only A..H up.
   // Undo re-adds the same values at the bottom of the sheet (the page sorts by date, so it shows in the same place).
   var delArm = false, delTimer = null;
@@ -1029,9 +1031,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function openOwe(name){
     owePerson = name; oweKeys = {};
     oweItems().forEach(function(it){ if (!it.p.done) oweKeys[it.key] = 1; });
-    renderOwe(); $("oweSheet").hidden = false; document.body.style.overflow = "hidden";
+    renderOwe(); showSheet("oweSheet");
   }
-  function closeOwe(){ owePerson = null; $("oweSheet").hidden = true; document.body.style.overflow = ""; }
+  function closeOwe(){ owePerson = null; hideSheet("oweSheet"); }
   function renderOwe(){
     if (!owePerson) return;
     var items = oweItems().filter(function(it){ return oweKeys[it.key]; }).sort(function(a, b){ return b.r.date - a.r.date || b.r.row - a.r.row; });
@@ -1122,8 +1124,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   function rowObj(n){ return (state.rows || []).filter(function(x){ return x.row === n; })[0]; }
 
-  function openSheet(){ if (!draft.length) addBlank(); else renderDraft(); $("sheet").hidden = false; document.body.style.overflow = "hidden"; }
-  function closeSheet(){ $("sheet").hidden = true; document.body.style.overflow = ""; }
+  function openSheet(){ if (!draft.length) addBlank(); else renderDraft(); showSheet("sheet"); }
+  function closeSheet(){ hideSheet("sheet"); }
   function splitField(r){
     var w = document.createElement("div"), i = document.createElement("input"); i.type = "text";
     i.placeholder = "เช่น มิ้นท์ 450; ป้า 300 (หรือพิมพ์แค่ชื่อ = หารเท่ากัน)"; i.value = r.split || "";
