@@ -47,7 +47,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font-family:inherit}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-.wrap{max-width:560px;margin:0 auto;padding:18px 16px 110px}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px calc(var(--tabbar-h) + 96px + env(safe-area-inset-bottom,0px))}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .sub{font-size:12px;color:var(--muted);margin-top:1px}
@@ -76,12 +76,81 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .clist .txt{flex:1;min-width:0}
 .clist .txt b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clist .txt small{display:block;font-size:11.5px;color:var(--muted)}
+.phead .acts{display:flex;align-items:center;gap:8px}
+.pact{padding:8px 14px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);font-size:13px;font-weight:600;color:var(--accent)}
+.addrow{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:14px;border-radius:16px;border:1.5px dashed var(--line-mid);color:var(--accent);font-size:14px;font-weight:600;background:transparent}
+.clist .addrow{box-shadow:none;background:transparent;justify-content:center}
+/* Manage sheets (instrument register): one grouped list, facts on every row, one primary action per sheet. */
+:root{--r-control:12px;--r-media:14px;--r-sheet:20px;--line-mid:rgba(20,40,30,.16);
+  --lift-1:0 0 0 1px rgba(20,40,30,.06),0 1px 2px rgba(20,40,30,.04);--lh-thai:1.65}
+:root[data-theme="dark"]{--line-mid:rgba(220,240,230,.16);--lift-1:0 0 0 1px rgba(220,240,230,.07)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--line-mid:rgba(220,240,230,.16);--lift-1:0 0 0 1px rgba(220,240,230,.07)}}
+.glist{background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);overflow:hidden}
+.grow-row{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 14px;text-align:left;position:relative}
+.grow-row+.grow-row::before{content:"";position:absolute;top:0;left:84px;right:0;height:1px;background:var(--line)}
+.glist.cats .grow-row+.grow-row::before{left:62px}
+.grow-row .txt{flex:1;min-width:0}
+.grow-row .txt b{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:600;line-height:1.35;overflow:hidden;white-space:nowrap}
+.grow-row .txt b span{overflow:hidden;text-overflow:ellipsis}
+.grow-row .txt small{display:block;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grow-row .amt{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.grow-row .amt.zero{color:var(--muted);font-weight:500}
+.grow-row .amt small{display:block;font-size:11.5px;font-weight:400;color:var(--muted)}
+.grow-row .chev{flex:none;width:8px;height:8px;border-top:1.5px solid var(--muted);border-right:1.5px solid var(--muted);transform:rotate(45deg);margin:0 2px 0 4px;opacity:.7}
+.flag{flex:none;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--line);color:var(--muted)}
+.cc{width:58px;height:37px;border-radius:6px;flex:none;position:relative;overflow:hidden;box-shadow:0 0 0 1px rgba(20,40,30,.08)}
+.cc img{width:100%;height:100%;object-fit:cover;display:block}
+.cc.gen::before,.ccbig.gen::before{content:"";position:absolute;left:12%;top:24%;width:20%;height:22%;border-radius:2px;background:linear-gradient(135deg,#efdfae,#b8964a);opacity:.9}
+.icsq{flex:none;width:36px;height:36px;border-radius:var(--r-control);background:var(--bg);display:grid;place-items:center;font-size:19px}
+.mhint{font-size:12.5px;color:var(--muted);line-height:var(--lh-thai);margin:10px 4px 0}
+.mempty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13.5px;line-height:var(--lh-thai)}
+.mgr-seg{margin:0 0 12px}
+.ccbig{position:relative;width:min(280px,100%);aspect-ratio:1.586;margin:2px auto 12px;border-radius:var(--r-media);overflow:hidden;color:#f4f7f2;box-shadow:0 10px 28px rgba(20,40,30,.18)}
+.ccbig img{width:100%;height:100%;object-fit:cover;display:block}
+.ccbig.gen::before{left:9%;top:22%;width:14%;height:17%;border-radius:4px}
+.ccbig .nm{position:absolute;left:9%;bottom:12%;right:9%;font-size:17px;font-weight:600;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccbig .nm:empty::after{content:"ชื่อบัตร";opacity:.55}
+.facts{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);margin-bottom:12px}
+.facts div{padding:10px 12px;min-width:0}
+.facts div+div{border-left:1px solid var(--line)}
+.facts small{display:block;font-size:11px;color:var(--muted)}
+.facts b{display:block;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fgroup{background:var(--surface);border-radius:var(--r-sheet);padding:14px 16px 16px;box-shadow:var(--lift-1);margin-bottom:12px}
+.fgroup .t{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:600;margin-bottom:10px}
+.fgroup .t small{font-size:12px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.fgroup .h{font-size:12px;color:var(--muted);margin-top:10px;line-height:var(--lh-thai)}
+.fgroup input.txt{width:100%;font-size:15px;color:var(--text);padding:12px 14px;border-radius:var(--r-control);background:var(--bg);border:1.5px solid transparent;outline:none}
+.fgroup input.txt:focus{border-color:var(--accent)}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.days button{height:36px;border-radius:10px;font-size:13.5px;font-weight:500;font-variant-numeric:tabular-nums;transition:background .15s ease}
+.days button:active{transform:scale(.97)}
+.days button[aria-pressed="true"]{background:var(--text);color:var(--bg);font-weight:600}
+.swrow{display:flex;align-items:center;gap:12px}
+.swrow .txt{flex:1;min-width:0}
+.swrow .txt b{display:block;font-size:14px;font-weight:600}
+.swrow .txt small{display:block;font-size:12px;color:var(--muted);line-height:var(--lh-thai)}
+.sw{position:relative;flex:none;width:50px;height:30px;border-radius:999px;background:var(--line-mid);transition:background .2s ease}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px rgba(20,40,30,.25);transition:transform .2s ease}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+.catprev{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);padding:12px 14px;margin-bottom:12px}
+.catprev .txt{flex:1;min-width:0}
+.catprev .txt b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catprev .txt small{display:block;font-size:12px;color:var(--muted)}
+.emojis{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.emojis button{height:40px;border-radius:10px;font-size:19px}
+.emojis button[aria-pressed="true"]{background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--text)}
+.emoji-own{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.emoji-own input.txt{width:64px;flex:none;text-align:center;padding:9px}
+.dr label.lact{display:flex;justify-content:space-between;align-items:baseline}
+.dr label .act{color:var(--accent);font-weight:600;font-size:11.5px;cursor:pointer;padding:0 2px}
 .clist .txt small.warn{color:var(--pending);font-weight:600}
 .clist .txt small.ok{color:var(--paid)}
 .clist .tot{font-size:14px;font-weight:600}
 .cthumb{width:32px;height:20px;object-fit:cover;border-radius:3px;flex:none;display:block}
 .cthumb.lg{width:44px;height:28px;border-radius:4px}
 .cthumb.ph{background:var(--line)}
+.cthumb.gen{position:relative;overflow:hidden}
 .cthumb.sm{width:26px;height:16px}
 .strip .nm{display:flex;align-items:center;gap:8px}
 .cyc{display:flex;align-items:center;justify-content:space-between;padding:2px 2px;margin-bottom:12px}
@@ -105,9 +174,6 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .eye{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin:-4px 0;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;opacity:.85;cursor:pointer;transition:background .2s ease,opacity .2s ease}
 .eye:hover{background:rgba(255,255,255,.18);opacity:1}
 .hero.dark .eye:hover{background:rgba(0,0,0,.08)}
-.eye svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.eye .slash{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .3s ease}
-.masked .eye .slash{stroke-dashoffset:0}
 .hero .amt,.split b,.shareline,.stamp small,.owe h2 small,.owe .pp b,.cat .row span:last-child,.day span:last-child,.tx .c,.mine,.part,.tot,.cat .dl{transition:filter .35s ease,opacity .35s ease}
 .masked .hero .amt,.masked .split b,.masked .shareline,.masked .stamp small,.masked .owe h2 small,.masked .owe .pp b,.masked .cat .row span:last-child,.masked .day span:last-child,.masked .tx .c,.masked .mine,.masked .part,.masked .tot,.masked .cat .dl,.masked .clist .tot,.masked .cardpick .tot,.masked .clist small.warn{filter:blur(.32em);opacity:.8;user-select:none}
 .stamp{flex:none;transform:rotate(3deg);border:2px solid currentColor;border-radius:12px;padding:5px 11px;text-align:center;font-weight:600;font-size:12.5px;line-height:1.25;color:#055B4E;background:rgba(255,255,255,.92);text-shadow:none}
@@ -160,7 +226,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .msg b{display:block;margin-bottom:4px}
 .empty{color:var(--muted);font-size:13.5px;text-align:center;padding:18px 0}
 .foot{text-align:center;font-size:11px;color:var(--muted);margin-top:16px}
-.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:28px;line-height:1;box-shadow:0 8px 22px rgba(18,161,80,.38);z-index:20}
+.fab{position:fixed;right:18px;bottom:calc(var(--tabbar-h) + 14px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:28px;line-height:1;box-shadow:0 8px 22px rgba(18,161,80,.38);z-index:20}
 .overlay{position:fixed;inset:0;background:rgba(10,14,12,.5);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .overlay[hidden]{display:none}
 .overlay.slide:not([hidden]){animation:ovIn .22s ease}
@@ -202,7 +268,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .crow .sub{flex:1;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .send{padding:10px 22px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:14px}
 .send:disabled{opacity:.5}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));background:var(--text);color:var(--bg);padding:6px 14px;border-radius:999px;font-size:12px;line-height:1.4;z-index:40;display:flex;gap:12px;align-items:center;max-width:92%;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabbar-h) + 84px + env(safe-area-inset-bottom,0px));background:var(--text);color:var(--bg);padding:6px 14px;border-radius:999px;font-size:12px;line-height:1.4;z-index:40;display:flex;gap:12px;align-items:center;max-width:92%;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
 .toast[hidden]{display:none}
 .toast span{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .toast button{flex:none;font-weight:600;font-size:12px;text-decoration:underline;padding:0}
@@ -234,6 +300,144 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .login img{width:84px;height:84px;border-radius:20px}
 .login h2{margin:0;font-size:22px}
 .login .sub{max-width:300px}
+/* ---- App shell (instrument register): bottom tab bar, compact scope row, tab pages ---- */
+:root{--tabbar-h:58px}
+.fab[hidden]{display:none}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:25;padding-bottom:env(safe-area-inset-bottom,0px);background:var(--surface);box-shadow:0 -1px 0 var(--line)}
+.tabbar .in{max-width:560px;margin:0 auto;height:var(--tabbar-h);display:grid;grid-template-columns:repeat(3,1fr)}
+.tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;font-size:11px;font-weight:500;color:var(--muted);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tabbar button i{display:block;font-style:normal}
+.tabbar button[aria-current="page"]{color:var(--text);font-weight:600}
+.tabbar .badge{position:absolute;top:6px;left:calc(50% + 8px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--pending);color:#fff;font-size:10px;font-weight:600;line-height:16px;text-align:center;font-variant-numeric:tabular-nums}
+.cyc{margin-bottom:12px}
+.cyc[hidden]{display:none}
+.cyc button{width:34px;height:34px;font-size:17px}
+.sum-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);padding:12px 14px;margin-bottom:12px}
+.sum-row .ico2{flex:none;width:36px;height:36px;border-radius:var(--r-control);display:grid;place-items:center;font-size:17px;background:var(--pending-soft);color:var(--pending)}
+.sum-row .txt{flex:1;min-width:0}
+.sum-row .txt b{display:block;font-size:14px;font-weight:600}
+.sum-row .txt small{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-row .amt{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sum-row .chev,.more-link .chev{flex:none;width:8px;height:8px;border-top:1.5px solid var(--muted);border-right:1.5px solid var(--muted);transform:rotate(45deg);margin-left:2px}
+.more-link{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 0 2px;font-size:13px;font-weight:600;color:var(--accent);border-top:1px solid var(--line);margin-top:6px}
+.sec .more-link .chev{border-color:var(--accent)}
+.duelist{margin-top:4px}
+.tx .c,.day span:last-child,.cat .row span:last-child{font-variant-numeric:tabular-nums}
+/* ---- Add / edit transaction form ---- */
+.txf{display:flex;flex-direction:column;gap:12px}
+.fhead{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);font-weight:500;padding:0 4px}
+.fhead button{color:var(--pending);font-size:12.5px;font-weight:600;padding:2px 4px}
+.amt-in{display:flex;align-items:baseline;gap:8px;background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);padding:14px 16px 12px;cursor:text}
+.amt-in span{font-size:22px;color:var(--muted);font-weight:500}
+.amt-in input{flex:1;min-width:0;width:100%;border:0;background:transparent;font-family:inherit;font-size:32px;font-weight:600;letter-spacing:-.02em;color:var(--text);outline:none;font-variant-numeric:tabular-nums;padding:0}
+.amt-in input::placeholder{color:var(--line-mid)}
+.fbox{background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);overflow:hidden}
+.frow{padding:12px 14px}
+.frow+.frow{border-top:1px solid var(--line)}
+.flab{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px}
+.flab .act{color:var(--accent);font-weight:600;font-size:12px;padding:0 2px;cursor:pointer}
+.tin{width:100%;border:0;background:transparent;font-family:inherit;font-size:16px;color:var(--text);outline:none;padding:0}
+.tin::placeholder{color:var(--muted);opacity:.7}
+.frow .dup:not(:empty){display:block;margin-top:6px}
+.rail{display:flex;gap:8px;overflow-x:auto;margin:0 -14px;padding:0 14px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rail::-webkit-scrollbar{display:none}
+.opt{position:relative;flex:none;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:999px;background:var(--bg);font-size:13.5px;font-weight:500;white-space:nowrap;color:var(--text);cursor:pointer}
+.opt[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.opt .cthumb{border-radius:3px}
+.opt input[type="date"]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.frow .seg{margin:0}
+.frow .h{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:var(--lh-thai)}
+.dhead{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-size:14px;font-weight:500}
+.dhead span{flex:none}
+.dhead small{flex:1;min-width:0;text-align:right;color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dhead .chev{flex:none;width:8px;height:8px;border-top:1.5px solid var(--muted);border-right:1.5px solid var(--muted);transform:rotate(135deg);margin:0 3px 3px;transition:transform .2s ease}
+.disc.open .dhead .chev{transform:rotate(-45deg);margin-bottom:-3px}
+.dbody{margin-top:10px}
+.dbody input{width:100%;font-size:16px;color:var(--text);background:var(--bg);border:1.5px solid transparent;border-radius:var(--r-control);padding:10px 12px;outline:none;font-family:inherit}
+.dbody input:focus{border-color:var(--accent)}
+.dsum{margin-bottom:8px}
+.dsum .grow-row{min-height:58px}
+.dsum .bad{color:var(--pending)}
+.addmore{display:block;margin:4px auto 8px;padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--accent)}
+.composer .danger{margin-top:4px;padding:9px}
+.phi{width:1em;height:1em;display:block;flex:none}
+.phw{display:inline-grid;place-items:center;line-height:1}
+.icon-btn .phi{width:19px;height:19px}
+.cyc button{display:grid;place-items:center}
+.cyc button .phi{width:16px;height:16px}
+.fab{display:grid;place-items:center}
+.fab .phi{width:26px;height:26px}
+.tabbar button .phi{width:24px;height:24px}
+.tabbar button .on{display:none}
+.tabbar button[aria-current="page"] .on{display:block}
+.tabbar button[aria-current="page"] .off{display:none}
+.cardpick .caret .phi{width:12px;height:12px}
+.eye{opacity:1}
+.eye svg.phi{width:18px;height:18px;fill:currentColor;stroke:none}
+.dhead .lead{flex:1 1 auto;min-width:0}
+.dhead small.tot{flex:none}
+.tx .ico .phi{width:20px;height:20px}
+.icsq .phi{width:20px;height:20px}
+.cat .row .phw .phi{width:16px;height:16px}
+.opt .phi{width:16px;height:16px}
+.sum-row .ico2 .phi{width:20px;height:20px}
+.primary .phi,.addrow .phi,.addmore .phi{width:17px;height:17px}
+.primary,.addmore{display:flex;align-items:center;justify-content:center;gap:6px}
+.addmore{margin:4px auto 8px}
+.iconpick{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.iconpick button{height:42px;border-radius:10px;display:grid;place-items:center;color:var(--text)}
+.iconpick button .phi{width:22px;height:22px}
+.iconpick button[aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.dhead .lead{display:flex;align-items:center;gap:8px}
+.dhead .lead .phi{width:18px;height:18px;color:var(--muted)}
+/* ---- Top view switcher: HeroUI v3 Tabs (grey track, sliding raised segment, hairline separators) ---- */
+:root{--track:#ebecee;--segment:#fff;--segment-shadow:0 2px 4px 0 rgba(0,0,0,.04),0 1px 2px 0 rgba(0,0,0,.06),0 0 1px 0 rgba(0,0,0,.06)}
+:root[data-theme="dark"]{--track:#202422;--segment:#353b38;--segment-shadow:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--track:#202422;--segment:#353b38;--segment-shadow:none}}
+#seg{position:relative;display:flex;flex-wrap:nowrap;gap:0;padding:4px;margin-bottom:12px;background:var(--track);border-radius:20px}
+#seg .chip{position:relative;z-index:1;flex:1 1 0;min-width:0;justify-content:center;text-align:center;height:36px;padding:0 6px;border-radius:999px;background:transparent;box-shadow:none;color:var(--muted);font-size:14px;font-weight:500;transition:color .15s ease;-webkit-tap-highlight-color:transparent}
+#seg .chip[aria-pressed="true"]{background:transparent;color:var(--text);font-weight:600}
+#seg .chip+.chip::before{content:"";position:absolute;left:0;top:25%;height:50%;width:1px;border-radius:1px;background:color-mix(in oklab,var(--muted) 25%,transparent);transition:opacity .15s ease}
+#seg .chip[aria-pressed="true"]::before,#seg .chip[aria-pressed="true"]+.chip::before{opacity:0}
+#seg .seg-ind{position:absolute;z-index:0;top:4px;bottom:4px;left:4px;border-radius:999px;background:var(--segment);box-shadow:var(--segment-shadow);transition:transform .25s cubic-bezier(.32,.72,0,1),width .25s cubic-bezier(.32,.72,0,1)}
+@media (prefers-reduced-motion:reduce){#seg .seg-ind{transition:none}}
+/* ---- Date picker (HeroUI DatePicker look) ---- */
+.dfield{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;height:46px;padding:0 12px 0 14px;border-radius:var(--r-control);background:var(--bg);color:var(--text);font-size:16px;font-variant-numeric:tabular-nums;text-align:left;transition:box-shadow .15s ease}
+.dfield[aria-expanded="true"]{box-shadow:inset 0 0 0 2px color-mix(in oklab,var(--accent) 55%,transparent)}
+.dfield .dv{display:flex;align-items:baseline;gap:0;min-width:0}
+.dfield .dv i{font-style:normal;color:var(--muted);margin:0 6px}
+.dfield .dv small{margin-left:10px;font-size:12.5px;color:var(--muted)}
+.dfield .dv .ph{color:var(--muted)}
+.dfield .ic .phi{width:20px;height:20px;color:var(--muted)}
+.cal{margin-top:10px;padding:12px 8px 8px;border-radius:20px;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 2px 8px rgba(0,0,0,.06),0 14px 28px rgba(0,0,0,.08)}
+.cal-h{display:flex;align-items:center;justify-content:space-between;padding:0 6px 6px 10px}
+.cal-h b{font-size:15px;font-weight:600}
+.cal-nav{display:flex;gap:2px}
+.cal-nav button{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;color:var(--accent)}
+.cal-nav .phi{width:18px;height:18px}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;justify-items:center}
+.cal-g .wd{font-size:12px;color:var(--muted);padding:6px 0 4px}
+.cal-g button{width:38px;height:38px;border-radius:999px;font-size:14.5px;font-variant-numeric:tabular-nums;color:var(--text);transition:background-color .15s ease,transform .15s ease}
+.cal-g button:active{transform:scale(.94)}
+.cal-g button.out{color:var(--muted);opacity:.55}
+.cal-g button.today{background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent);font-weight:600}
+.cal-g button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600;opacity:1}
+.cal-f{display:flex;gap:6px;justify-content:flex-end;margin-top:6px;padding:6px 4px 0;border-top:1px solid var(--line)}
+.cal-f button{padding:7px 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--accent)}
+/* ---- Sliding segmented controls (same motion as the top tabs); tone = what the colour means ---- */
+.seg.slide{position:relative;background:var(--track);border-radius:20px;padding:4px}
+.seg.slide button{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;background:transparent;box-shadow:none;color:var(--muted);font-weight:500;transition:color .2s ease}
+.seg.slide button[aria-pressed="true"]{background:transparent;box-shadow:none;color:var(--text);font-weight:600}
+.seg.slide button .n{font-variant-numeric:tabular-nums;opacity:.7}
+.seg.slide .seg-ind{position:absolute;z-index:0;top:4px;bottom:4px;left:4px;border-radius:999px;background:var(--segment);box-shadow:var(--segment-shadow);transition:transform .25s cubic-bezier(.32,.72,0,1),background-color .25s ease,box-shadow .25s ease}
+.seg.slide[data-tone="pending"] .seg-ind{background:var(--pending-soft);box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--pending) 45%,transparent)}
+.seg.slide[data-tone="pending"] button[aria-pressed="true"]{color:var(--pending)}
+.seg.slide[data-tone="paid"] .seg-ind{background:var(--paid-soft);box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--paid) 45%,transparent)}
+.seg.slide[data-tone="paid"] button[aria-pressed="true"]{color:var(--paid)}
+.sdot{flex:none;width:7px;height:7px;border-radius:50%}
+.sdot.pending{background:var(--pending)}
+.sdot.paid{background:var(--paid)}
+@media (prefers-reduced-motion:reduce){.seg.slide .seg-ind{transition:none}}
 </style>
 </head>
 <body>
@@ -244,18 +448,17 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       <div class="sub" id="updated">กำลังโหลด…</div>
     </div>
     <div class="hbtns">
-      <button class="icon-btn" id="searchBtn" aria-label="ค้นหา" aria-pressed="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
-      <button class="icon-btn" id="refresh" aria-label="Refresh">↻</button>
+      <button class="icon-btn" id="refresh" aria-label="รีเฟรช" data-ph="arrow-clockwise"></button>
     </div>
   </header>
   <div id="msg"></div>
-  <div class="search" id="searchBox" hidden><input id="q" type="search" placeholder="ค้นหา ชื่อร้าน หมวด โน้ต บัตร คนหาร" autocomplete="off" enterkeyhint="search"></div>
+  <div class="search" id="searchBox" hidden><input id="q" type="search" placeholder="ค้นหาทุกรอบ: ร้าน หมวด โน้ต บัตร คนหาร" autocomplete="off" enterkeyhint="search"></div>
   <div class="chips" id="seg" role="group" aria-label="มุมมอง" hidden></div>
   <button class="cardpick" id="cardpick" aria-haspopup="dialog" hidden></button>
   <div class="cyc" id="cyc" hidden>
-    <button id="prev" aria-label="Previous cycle">‹</button>
+    <button id="prev" aria-label="รอบก่อน" data-ph="caret-left"></button>
     <div class="mid" id="range"></div>
-    <button id="next" aria-label="Next cycle">›</button>
+    <button id="next" aria-label="รอบถัดไป" data-ph="caret-right"></button>
   </div>
   <div class="due" id="due" hidden>
     <div class="dtrack"><div class="dfill" id="dfill"></div></div>
@@ -267,10 +470,15 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   <div class="foot">อ่านจาก Google Sheets · รีเฟรชอัตโนมัติทุก 1 นาที · เขียนเฉพาะตอนกดบันทึก</div>
 </div>
 
-<button class="fab" id="fab" aria-label="เพิ่มรายการ">＋</button>
+<button class="fab" id="fab" aria-label="เพิ่มรายการ" data-ph="plus"></button>
+<nav class="tabbar" aria-label="เมนูหลัก"><div class="in">
+  <button data-tab="sum"><i class="off" data-ph="chart-bar"></i><i class="on" data-ph="chart-bar" data-fill></i>สรุป</button>
+  <button data-tab="list"><i class="off" data-ph="list-bullets"></i><i class="on" data-ph="list-bullets" data-fill></i>รายการ</button>
+  <button data-tab="owe"><i class="off" data-ph="users"></i><i class="on" data-ph="users" data-fill></i>คนหาร<span class="badge" hidden></span></button>
+</div></nav>
 <div class="overlay slide" id="sheet" hidden>
-  <div class="panel" role="dialog" aria-label="เพิ่มรายการ">
-    <div class="phead"><b>เพิ่มรายการ</b><button class="icon-btn" id="closeSheet" aria-label="Close">✕</button></div>
+  <div class="panel auto" role="dialog" aria-label="เพิ่มรายการ">
+    <div class="phead"><b>เพิ่มรายการ</b><button class="icon-btn" id="closeSheet" aria-label="Close" data-ph="x"></button></div>
     <div class="scroller"><div id="draftBox"></div></div>
     <div class="composer">
       <div class="err" id="addMsg"></div>
@@ -280,21 +488,42 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 </div>
 <div class="overlay slide" id="editSheet" hidden>
   <div class="panel auto" role="dialog" aria-label="แก้ไขรายการ">
-    <div class="phead"><b>แก้ไขรายการ</b><button class="icon-btn" id="closeEdit" aria-label="Close">✕</button></div>
+    <div class="phead"><b>แก้ไขรายการ</b><button class="icon-btn" id="closeEdit" aria-label="Close" data-ph="x"></button></div>
     <div class="scroller"><div id="editBody"></div><div class="err" id="editMsg"></div></div>
     <div class="composer"><button class="primary" id="editSave">บันทึกการแก้ไข</button><button class="danger" id="editDel">ลบรายการนี้</button></div>
   </div>
 </div>
 <div class="overlay slide" id="oweSheet" hidden>
   <div class="panel auto" role="dialog" aria-label="รายการค้างจ่ายคืน">
-    <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close">✕</button></div>
+    <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close" data-ph="x"></button></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
   </div>
 </div>
 <div class="overlay slide" id="cardSheet" hidden>
   <div class="panel auto" role="dialog" aria-label="เลือกบัตร">
-    <div class="phead"><b>เลือกบัตร</b><button class="icon-btn" id="closeCards" aria-label="Close">✕</button></div>
+    <div class="phead"><b>เลือกบัตร</b><div class="acts"><button class="pact" id="cardMgrBtn">จัดการ</button><button class="icon-btn" id="closeCards" aria-label="Close" data-ph="x"></button></div></div>
     <div class="scroller"><div class="clist" id="cardList"></div></div>
+  </div>
+</div>
+<div class="overlay slide" id="cardMgr" hidden>
+  <div class="panel auto" role="dialog" aria-label="จัดการบัตร">
+    <div class="phead"><b>จัดการบัตร</b><button class="icon-btn" id="close-cardMgr" aria-label="Close" data-ph="x"></button></div>
+    <div class="scroller"><div id="cardMgrBody"></div></div>
+    <div class="composer"><button class="primary" id="cardMgrAdd" data-ph="plus">เพิ่มบัตร</button></div>
+  </div>
+</div>
+<div class="overlay slide" id="catMgr" hidden>
+  <div class="panel auto" role="dialog" aria-label="จัดการหมวด">
+    <div class="phead"><b>จัดการหมวด</b><button class="icon-btn" id="close-catMgr" aria-label="Close" data-ph="x"></button></div>
+    <div class="scroller"><div id="catMgrBody"></div></div>
+    <div class="composer"><button class="primary" id="catMgrAdd" data-ph="plus">เพิ่มหมวด</button></div>
+  </div>
+</div>
+<div class="overlay slide" id="itemSheet" hidden>
+  <div class="panel auto" role="dialog" aria-labelledby="itemTitle">
+    <div class="phead"><b id="itemTitle"></b><button class="icon-btn" id="close-itemSheet" aria-label="Close" data-ph="x"></button></div>
+    <div class="scroller"><div id="itemBody"></div></div>
+    <div class="composer"><div class="err" id="itemMsg"></div><button class="primary" id="itemSave">บันทึก</button></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -307,13 +536,24 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 </div>
 <script>
 (function(){
+  // Material Symbols Rounded 0.48.0 (Apache-2.0, fonts.google.com/icons), inlined so the page needs no icon CDN.
+  // Keys are the app's own icon ids (Categories!B stores these, e.g. fork-knife), mapped to Material glyphs:
+  // chart-bar=bar_chart, list-bullets=format_list_bulleted, users=group, arrow-clockwise=refresh, x=close, caret-left=chevron_left, caret-right=chevron_right, caret-down=keyboard_arrow_down, plus=add, eye=visibility, eye-slash=visibility_off, calendar-blank=calendar_today, calendar-check=event_available, hand-coins=payments, fork-knife=restaurant, coffee=local_cafe, hamburger=lunch_dining, cooking-pot=skillet, wine=wine_bar, shopping-cart=shopping_cart, basket=shopping_basket, shopping-bag=shopping_bag, train=train, bus=directions_bus, car=directions_car, taxi=local_taxi, motorcycle=two_wheeler, bicycle=pedal_bike, gas-pump=local_gas_station, airplane=flight, house=home, lightning=bolt, drop=water_drop, wifi-high=wifi, device-mobile=mobile, repeat=autorenew, film-slate=movie, popcorn=theaters, music-notes=music_note, game-controller=sports_esports, t-shirt=apparel, scissors=content_cut, pill=pill, first-aid=medical_services, tooth=dentistry, barbell=fitness_center, graduation-cap=school, book-open=menu_book, briefcase=work, bed=bed, gift=redeem, heart=favorite, baby=child_care, dog=pets, paw-print=cruelty_free, sparkle=star_shine, wrench=build, receipt=receipt_long, credit-card=credit_card, money=payments, piggy-bank=savings, bank=account_balance, tag=sell, dots-three-outline=more_horiz.
+  // UI controls use the outline weight (filled when current); category icons are always filled so they read as solid badges.
+  var PH = {"chart-bar":"<path d=\"M690-160q-12.75 0-21.37-8.63Q660-177.25 660-190v-220q0-12.75 8.63-21.38Q677.25-440 690-440h80q12.75 0 21.38 8.62Q800-422.75 800-410v220q0 12.75-8.62 21.37Q782.75-160 770-160h-80Zm-250 0q-12.75 0-21.37-8.63Q410-177.25 410-190v-580q0-12.75 8.63-21.38Q427.25-800 440-800h80q12.75 0 21.38 8.62Q550-782.75 550-770v580q0 12.75-8.62 21.37Q532.75-160 520-160h-80Zm-250 0q-12.75 0-21.37-8.63Q160-177.25 160-190v-380q0-12.75 8.63-21.38Q177.25-600 190-600h80q12.75 0 21.38 8.62Q300-582.75 300-570v380q0 12.75-8.62 21.37Q282.75-160 270-160h-80Z\"/>","list-bullets":"<path d=\"M407-198q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h403q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H407Zm0-252q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h403q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H407Zm0-253q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h403q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H407ZM189-161q-28.05 0-48.02-19Q121-199 121-227.5t19.5-48q19.5-19.5 48-19.5t47.5 19.98q19 19.97 19 48.02 0 27.23-19.39 46.61Q216.23-161 189-161Zm0-252q-28.05 0-48.02-19.5Q121-452 121-480t19.98-47.5Q160.95-547 189-547q27.23 0 46.61 19.5Q255-508 255-480t-19.39 47.5Q216.23-413 189-413Zm-48.5-272.5Q121-705 121-733t19.5-47.5Q160-800 188-800t47.5 19.5Q255-761 255-733t-19.5 47.5Q216-666 188-666t-47.5-19.5Z\"/>","users":"<path d=\"M38-254q0-35 18-63.5t50-42.5q73-32 131.5-46T358-420q62 0 120 14t131 46q32 14 50.5 42.5T678-254v34q0 25-17.5 42.5T618-160H98q-25 0-42.5-17.5T38-220v-34Zm824 94H724q5-15 9.5-29.5T738-220v-34q0-63-29-101.5T622-420q69 8 130 22t99 34q33 19 52 47t19 63v34q0 25-17.5 42.5T862-160ZM250-523q-42-42-42-108t42-108q42-42 108-42t108 42q42 42 42 108t-42 108q-42 42-108 42t-108-42Zm426 0q-42 42-108 42-11 0-24.5-1.5T519-488q24-25 36.5-61.5T568-631q0-45-12.5-79.5T519-774q11-3 24.5-5t24.5-2q66 0 108 42t42 108q0 66-42 108ZM98-220h520v-34q0-16-9.5-31T585-306q-72-32-121-43t-106-11q-57 0-106.5 11T130-306q-14 6-23 21t-9 31v34Zm324.5-346.5Q448-592 448-631t-25.5-64.5Q397-721 358-721t-64.5 25.5Q268-670 268-631t25.5 64.5Q319-541 358-541t64.5-25.5ZM358-220Zm0-411Z\"/>","arrow-clockwise":"<path d=\"M480-160q-133 0-226.5-93.5T160-480q0-133 93.5-226.5T480-800q85 0 149 34.5T740-671v-99q0-13 8.5-21.5T770-800q13 0 21.5 8.5T800-770v194q0 13-8.5 21.5T770-546H576q-13 0-21.5-8.5T546-576q0-13 8.5-21.5T576-606h138q-38-60-97-97t-137-37q-109 0-184.5 75.5T220-480q0 109 75.5 184.5T480-220q75 0 140-39.5T717-366q5-11 16.5-16.5t22.5-.5q12 5 16 16.5t-1 23.5q-39 84-117.5 133.5T480-160Z\"/>","x":"<path d=\"M480-438 270-228q-9 9-21 9t-21-9q-9-9-9-21t9-21l210-210-210-210q-9-9-9-21t9-21q9-9 21-9t21 9l210 210 210-210q9-9 21-9t21 9q9 9 9 21t-9 21L522-480l210 210q9 9 9 21t-9 21q-9 9-21 9t-21-9L480-438Z\"/>","caret-left":"<path d=\"m406-481 177 177q9 9 8.5 21t-9.5 21q-9 9-21.5 9t-21.5-9L341-460q-5-5-7-10t-2-11q0-6 2-11t7-10l199-199q9-9 21.5-9t21.5 9q9 9 9 21.5t-9 21.5L406-481Z\"/>","caret-right":"<path d=\"M530-481 353-658q-9-9-8.5-21t9.5-21q9-9 21.5-9t21.5 9l198 198q5 5 7 10t2 11q0 6-2 11t-7 10L396-261q-9 9-21 8.5t-21-9.5q-9-9-9-21.5t9-21.5l176-176Z\"/>","caret-down":"<path d=\"M469-358q-5-2-10-7L261-563q-9-9-8.5-21.5T262-606q9-9 21.5-9t21.5 9l175 176 176-176q9-9 21-8.5t21 9.5q9 9 9 21.5t-9 21.5L501-365q-5 5-10 7t-11 2q-6 0-11-2Z\"/>","plus":"<path d=\"M450-450H230q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h220v-220q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v220h220q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H510v220q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-220Z\"/>","eye":"<path d=\"M600.5-379.62q49.5-49.62 49.5-120.5T600.38-620.5Q550.76-670 479.88-670T359.5-620.38Q310-570.76 310-499.88t49.62 120.38q49.62 49.5 120.5 49.5t120.38-49.62Zm-200-41.12q-32.5-32.73-32.5-79.5 0-46.76 32.74-79.26 32.73-32.5 79.5-32.5 46.76 0 79.26 32.74 32.5 32.73 32.5 79.5 0 46.76-32.74 79.26-32.73 32.5-79.5 32.5-46.76 0-79.26-32.74ZM234.5-276Q124-352 57-470q-4-7.13-6-14.65-2-7.52-2-15.43 0-7.92 2-15.38 2-7.47 6-14.54 67-118 177.5-194T480-800q135 0 245.5 76T903-530q4 7.12 6 14.65 2 7.52 2 15.43 0 7.92-2 15.38-2 7.47-6 14.54-67 118-177.5 194T480-200q-135 0-245.5-76ZM480-500Zm222.5 174.5Q804-391 857-500q-53-109-154.33-174.5Q601.34-740 480.17-740T257.5-674.5Q156-609 102-500q54 109 155.33 174.5Q358.66-260 479.83-260t222.67-65.5Z\"/>","eye-slash":"<path d=\"M600-620q29 29 42.5 71.5T647-464q0 13-8.5 21.5T617-434q-13 0-21.5-8.5T587-464q11-34 2.5-64.5T559-580q-21-22-52-30t-64 3q-13 0-21.5-8.5T413-637q0-13 8.5-21.5T443-667q42-9 85 4.5t72 42.5ZM490-740q-32 0-64 3t-63 13q-12 4-24-1t-17-16q-5-11 0-22.5t16-15.5q35-11 72-16t75-5q137 0 249.5 75.5T907-526q3 6 5 12.5t2 13.5q0 7-1.5 13.5T908-474q-23 49-55 90.5T779-307q-9 8-20 5.5T741-313q-7-9-5.5-20t10.5-19q36-30 65-66.5t46-81.5q-49-109-148-174.5T490-740Zm-10 540q-136 0-247.5-76T55-472q-4-7-5.5-13.5T48-500q0-8 2-14.5t5-13.5q24-48 55.5-90.5T182-696L77-801q-9-9-8.5-21t8.5-21q9-9 21.5-9t21.5 9l716 716q8 8 8 19.5T836-87q-8 10-20.5 10T794-86L648-229q-41 15-83 22t-85 7ZM223-654q-41 29-72 68t-49 86q52 112 156.5 176T488-260q29 0 58-1.5t55-14.5l-64-64q-14 6-28.5 8t-28.5 2q-71 0-120.5-49.5T310-500q0-14 2.5-28.5T320-557l-97-97Zm305 142Zm-116 58Z\"/>","calendar-blank":"<path d=\"M180-80q-24 0-42-18t-18-42v-620q0-24 18-42t42-18h65v-28q0-13.6 9-22.8 9-9.2 23.02-9.2t23.5 9.2Q310-861.6 310-848v28h340v-28q0-13.6 9-22.8 9-9.2 23.02-9.2t23.5 9.2Q715-861.6 715-848v28h65q24 0 42 18t18 42v620q0 24-18 42t-42 18H180Zm0-60h600v-430H180v430Zm0-490h600v-130H180v130Zm0 0v-130 130Z\"/>","calendar-check":"<path d=\"m433-313 163-163q9-9 21-8.5t21 9.5q9 9 9 21.2 0 12.19-9 20.8L454-249q-9 9-21 9t-21-9l-96-95q-9-8.61-9-20.8 0-12.2 9-21.2t21-8.5q12 .5 21 8.5l75 73ZM180-80q-24 0-42-18t-18-42v-620q0-24 18-42t42-18h65v-28q0-13.6 9-22.8 9-9.2 23.02-9.2t23.5 9.2Q310-861.6 310-848v28h340v-28q0-13.6 9-22.8 9-9.2 23.02-9.2t23.5 9.2Q715-861.6 715-848v28h65q24 0 42 18t18 42v620q0 24-18 42t-42 18H180Zm0-60h600v-430H180v430Zm0-490h600v-130H180v130Zm0 0v-130 130Z\"/>","hand-coins":"<path d=\"M540-420q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM220-280q-24.75 0-42.37-17.63Q160-315.25 160-340v-400q0-24.75 17.63-42.38Q195.25-800 220-800h640q24.75 0 42.38 17.62Q920-764.75 920-740v400q0 24.75-17.62 42.37Q884.75-280 860-280H220Zm100-60h440q0-42 29-71t71-29v-200q-42 0-71-29t-29-71H320q0 42-29 71t-71 29v200q42 0 71 29t29 71Zm450 180H100q-24.75 0-42.37-17.63Q40-195.25 40-220v-430q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v430h670q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5ZM220-340v-400 400Z\"/>"};
+  var PH_FILL = {"chart-bar":"<path d=\"M690-160q-12.75 0-21.37-8.63Q660-177.25 660-190v-220q0-12.75 8.63-21.38Q677.25-440 690-440h80q12.75 0 21.38 8.62Q800-422.75 800-410v220q0 12.75-8.62 21.37Q782.75-160 770-160h-80Zm-250 0q-12.75 0-21.37-8.63Q410-177.25 410-190v-580q0-12.75 8.63-21.38Q427.25-800 440-800h80q12.75 0 21.38 8.62Q550-782.75 550-770v580q0 12.75-8.62 21.37Q532.75-160 520-160h-80Zm-250 0q-12.75 0-21.37-8.63Q160-177.25 160-190v-380q0-12.75 8.63-21.38Q177.25-600 190-600h80q12.75 0 21.38 8.62Q300-582.75 300-570v380q0 12.75-8.62 21.37Q282.75-160 270-160h-80Z\"/>","list-bullets":"<path d=\"M407-198q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h403q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H407Zm0-252q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h403q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H407Zm0-253q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h403q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H407ZM189-161q-28.05 0-48.02-19Q121-199 121-227.5t19.5-48q19.5-19.5 48-19.5t47.5 19.98q19 19.97 19 48.02 0 27.23-19.39 46.61Q216.23-161 189-161Zm0-252q-28.05 0-48.02-19.5Q121-452 121-480t19.98-47.5Q160.95-547 189-547q27.23 0 46.61 19.5Q255-508 255-480t-19.39 47.5Q216.23-413 189-413Zm-48.5-272.5Q121-705 121-733t19.5-47.5Q160-800 188-800t47.5 19.5Q255-761 255-733t-19.5 47.5Q216-666 188-666t-47.5-19.5Z\"/>","users":"<path d=\"M38-254q0-35 18-63.5t50-42.5q73-32 131.5-46T358-420q62 0 120 14t131 46q32 14 50.5 42.5T678-254v34q0 25-17.5 42.5T618-160H98q-25 0-42.5-17.5T38-220v-34Zm686 94q5-15 9.5-29.5T738-220v-34q0-63-29-101.5T622-420q69 8 130 22t99 34q33 19 52 47t19 63v34q0 25-17.5 42.5T862-160H724ZM250-523q-42-42-42-108t42-108q42-42 108-42t108 42q42 42 42 108t-42 108q-42 42-108 42t-108-42Zm426 0q-42 42-108 42-11 0-24.5-1.5T519-488q24-25 36.5-61.5T568-631q0-45-12.5-79.5T519-774q11-3 24.5-5t24.5-2q66 0 108 42t42 108q0 66-42 108Z\"/>"};
+  var PH_CAT = {"fork-knife":"<path d=\"M285-600v-250q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v250h65v-250q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v249.73q0 58.27-36.5 99.77Q397-459 345-448v338q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q285-97.25 285-110v-338q-52-11-88.5-52.5T160-600.27V-850q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v250h65Zm415 200h-85q-12.75 0-21.37-8.63Q585-417.25 585-430v-275q0-69 42.5-122t98.5-53q14 0 24 10.13T760-846v736q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q700-97.25 700-110v-290Z\"/>","coffee":"<path d=\"M190-120q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h580q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H190Zm121-140q-63 0-107-43.5T160-410v-370q0-24.75 17.63-42.38Q195.25-840 220-840h600q24.75 0 42.38 17.62Q880-804.75 880-780v160q0 24.75-17.62 42.37Q844.75-560 820-560h-96v150q0 63-44 106.5T573-260H311Zm413-360h96v-160h-96v160Z\"/>","hamburger":"<path d=\"M140-120q-25 0-42.5-17.5T80-180v-98q0-13 8.5-21.5T110-308h740q13 0 21.5 8.5T880-278v98q0 25-17.5 42.5T820-120H140Zm279.5-284Q400-382 346-382t-71.5-22Q257-426 216-426q-34 0-52.5 16.5T110-385q-12 2-21-6t-9-21q0-13 9-22.5t21-14.5q21-9 43-23t63-14q54 0 71.5 22t58.5 22q41 0 60.5-22t73.5-22q54 0 73.5 22t60.5 22q41 0 58.5-22t71.5-22q41 0 63 14t43 23q12 5 21 14.5t9 22.5q0 13-9 21t-21 6q-35-8-53.5-24.5T744-426q-41 0-58.5 22T614-382q-54 0-73.5-22T480-426q-41 0-60.5 22ZM626-825q72 15 128.5 46t91 78.5Q880-653 880-588q0 13-8.5 21.5T850-558H110q-13 0-21.5-8.5T80-588q0-65 34.5-112.5t91-78.5Q262-810 334-825t146-15q74 0 146 15Z\"/>","cooking-pot":"<path d=\"M200-160q-51 0-85.5-34.5T80-280v-169q0-13 9-22t22-9h549q0-32 16-58.5t45-36.5l161-54q12-4 23 1.5t15 17.5q4 12-1.5 23T901-572l-161 53q-11 4-15.5 15.5T720-480v200q0 50-34.5 85T600-160H200Zm-60-532q-21-31-30.5-58.5T101-810q0-13 8.5-21.5T131-840q11 0 19 8.5t8 20.5q1 26 10 48.5t31 53.5q21 31 31 58.5t8 61.5q-1 12-10 20.5t-22 8.5q-11 0-18.5-8.5T180-589q0-26-9.5-49T140-692Zm170 0q-21-31-31-58.5t-9-59.5q0-13 9-21.5t22-8.5q11 0 19 8.5t8 20.5q1 26 10 48.5t31 53.5q21 31 30.5 58.5T407-589q-1 12-9.5 20.5T376-560q-11 0-18.5-8.5T350-589q0-26-9.5-49T310-692Zm170 0q-21-31-31-58.5t-9-59.5q0-13 9-21.5t22-8.5q11 0 19 8.5t8 20.5q1 26 10 48.5t31 53.5q21 31 30.5 58.5T577-589q-1 12-9.5 20.5T546-560q-11 0-18.5-8.5T520-589q0-26-9.5-49T480-692Z\"/>","wine":"<path d=\"M450-180v-185q-99-14-154.5-79.7Q240-510.41 240-600v-210q0-12.75 8.63-21.38Q257.25-840 270-840h420q12.75 0 21.38 8.62Q720-822.75 720-810v210q0 89.59-55.5 155.3Q609-379 510-365v185h100q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H350q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h100ZM300-630h360v-150H300v150Z\"/>","shopping-cart":"<path d=\"M236-102.21q-21-21.21-21-51T236.21-204q21.21-21 51-21T338-203.79q21 21.21 21 51T337.79-102q-21.21 21-51 21T236-102.21Zm400 0q-21-21.21-21-51T636.21-204q21.21-21 51-21T738-203.79q21 21.21 21 51T737.79-102q-21.21 21-51 21T636-102.21ZM205-801h589.07q22.97 0 34.95 21 11.98 21-.02 42L694-495q-11 19-28.56 30.5T627-453H324l-56 104h461q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H277q-42 0-60.5-28t.5-63l64-118-152-322H81q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q68.25-880 81-880h68q9 0 16.2 4.43 7.2 4.44 10.8 12.57l29 62Z\"/>","basket":"<path d=\"M206-120q-20 0-36.5-12T148-164L38-562q-4-14 5-26t24-12h202l185-270q5-6 11-9.5t14-3.5q8 0 14 3.5t11 9.5l184 270h206q15 0 24 12t5 26L812-164q-5 20-21.5 32T754-120H206Zm316.5-197.5Q540-335 540-360t-17.5-42.5Q505-420 480-420t-42.5 17.5Q420-385 420-360t17.5 42.5Q455-300 480-300t42.5-17.5ZM342-600h273L479-800 342-600Z\"/>","shopping-bag":"<path d=\"M220-80q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h110v-10q0-63 43.5-106.5T480-880q63 0 106.5 43.5T630-730v10h110q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm170-640h180v-10q0-38-26-64t-64-26q-38 0-64 26t-26 64v10Zm231.5 171.5Q630-557 630-570v-90h-60v90q0 13 8.5 21.5T600-540q13 0 21.5-8.5Zm-240 0Q390-557 390-570v-90h-60v90q0 13 8.5 21.5T360-540q13 0 21.5-8.5Z\"/>","train":"<path d=\"M160-340v-380q0-41 19-71.5t58.5-50q39.5-19.5 100-29T480-880q86 0 146.5 9t99 28.5Q764-823 782-793t18 73v380q0 59-40.5 99.5T660-200l26 26q15 15 7 34.5T663-120q-6 0-11.5-2t-10.5-7l-71-71H390l-71 71q-5 5-10.5 7t-11.5 2q-21 0-29.5-19.5T274-174l26-26q-59 0-99.5-40.5T160-340Zm60-205h234v-155H220v155Zm294 0h226v-155H514v155ZM374-331q16-16 16-39t-16-39q-16-16-39-16t-39 16q-16 16-16 39t16 39q16 16 39 16t39-16Zm290 0q16-16 16-39t-16-39q-16-16-39-16t-39 16q-16 16-16 39t16 39q16 16 39 16t39-16Z\"/>","bus":"<path d=\"M302-202v39q0 17.92-12.56 30.46T258.94-120q-17.94 0-30.44-12.54T216-163v-68q-29-16-42.5-46T160-341v-397q0-73.66 76.5-107.83T481-880q166 0 242.5 34T800-738v397q0 34-13.5 64T744-231v68q0 17.92-12.56 30.46T700.94-120q-17.94 0-30.44-12.54T658-163v-39H302Zm-82-329h520v-173H220v173Zm145 202.94q16-16.06 16-39T364.94-406q-16.06-16-39-16T287-405.94q-16 16.06-16 39T287.06-328q16.06 16 39 16T365-328.06Zm308 0q16-16.06 16-39T672.94-406q-16.06-16-39-16T595-405.94q-16 16.06-16 39T595.06-328q16.06 16 39 16T673-328.06Z\"/>","car":"<path d=\"M200-204v44q0 16.67-11.74 28.33Q176.53-120 159.76-120q-16.76 0-28.26-11.67Q120-143.33 120-160v-304q0-4.67.5-9.33.5-4.67 2.5-9.67l78-236q6-19 21.75-30T258-760h444q19.5 0 35.25 11T759-719l78 236q2 5 2.5 9.67.5 4.66.5 9.33v304q0 16.67-11.74 28.33Q816.53-120 799.76-120 783-120 771-131.96T759-161v-43H200Zm3-330h554l-55-166H258l-55 166Zm82.76 220q23.24 0 38.74-15.75Q340-345.5 340-368q0-23.33-15.75-39.67Q308.5-424 286-424q-23.33 0-39.67 16.26Q230-391.47 230-368.24q0 23.24 16.26 38.74 16.27 15.5 39.5 15.5ZM675-314q23.33 0 39.67-15.75Q731-345.5 731-368q0-23.33-16.26-39.67Q698.47-424 675.24-424q-23.24 0-38.74 16.26-15.5 16.27-15.5 39.5 0 23.24 15.75 38.74Q652.5-314 675-314Z\"/>","taxi":"<path d=\"M200-204v44q0 16.67-11.74 28.33Q176.53-120 159.76-120q-16.76 0-28.26-11.67Q120-143.33 120-160v-304q0-4.67.5-9.33.5-4.67 2.5-9.67l78-236q6-19 21.75-30T258-760h117v-45q0-12.75 8.63-21.38Q392.25-835 405-835h152q12.75 0 21.38 8.62Q587-817.75 587-805v45h115q19.5 0 35.25 11T759-719l78 236q2 5 2.5 9.67.5 4.66.5 9.33v304q0 16.67-11.74 28.33Q816.53-120 799.76-120 783-120 771-131.96T759-161v-43H200Zm3-330h554l-55-166H258l-55 166Zm82.76 220q23.24 0 38.74-15.75Q340-345.5 340-368q0-23.33-15.75-39.67Q308.5-424 286-424q-23.33 0-39.67 16.26Q230-391.47 230-368.24q0 23.24 16.26 38.74 16.27 15.5 39.5 15.5ZM675-314q23.33 0 39.67-15.75Q731-345.5 731-368q0-23.33-16.26-39.67Q698.47-424 675.24-424q-23.24 0-38.74 16.26-15.5 16.27-15.5 39.5 0 23.24 15.75 38.74Q652.5-314 675-314Z\"/>","motorcycle":"<path d=\"M157-200q-65 0-111-45.5T0-357q0-66 45.5-111.5T156-514l-47-36H25q-11 0-18-7t-7-18q0-11 7-18t18-7h156l99 60 149-56q5-2 10.5-3t10.5-1h129l-78-100h-59q-13 0-21.5-8.5T412-730q0-13 8.5-21.5T442-760h60q14 0 26.5 6t20.5 17l68 88 107-53q8-4 15 .5t7 12.5v65q0 6-4.5 10.5T731-609h-83l85 110q17-7 34-10.5t35-3.5q66 0 112 45.5T960-356q0 66-46 111t-112 45q-65 0-110.5-45.5T646-356q0-30 10-57t30-49l-35-45-137 209q-5 6-11 10t-14 4h-82q-5 0-10.5-2t-10.5-6l-72-65q0 66-45.5 111.5T157-200Zm0-60q41 0 69-28.5t28-68.5q0-40-28-68.5T157-454q-40 0-68.5 28T60-357q0 41 28.5 69t68.5 28Zm645 0q41 0 69.5-28t28.5-68q0-41-28.5-69.5T802-454q-40 0-68 28.5T706-356q0 40 28 68t68 28Z\"/>","bicycle":"<path d=\"M194-160q-81 0-137.5-57T0-355q0-81 57-137.5T195-549q71 0 124.5 45.5T384-388h51l-82-232h-43q-13 0-21.5-8.5T280-650q0-13 8.5-21.5T310-680h128q13 0 21.5 8.5T468-650q0 13-8.5 21.5T438-620h-22l26 71h222l-71-191h-75q-13 0-21.5-8.5T488-770q0-13 8.5-21.5T518-800h69q24 0 40.5 11t24.5 33l76 207h38q81 0 137.5 56T960-357q0 81-56.5 139T766-160q-72 0-126-48t-66-120H384q-11 72-64.5 120T194-160Zm131-168v-60h-89q-13 0-21.5 8.5T206-358q0 13 8.5 21.5T236-328h89Zm174-60h76q4-23 15.5-51t31.5-50H463l36 101Zm191-81 33 86q5 11 15.5 16t22.5 1q12-4 17-15.5t1-22.5l-29-85-60 20Z\"/>","gas-pump":"<path d=\"M160-150v-630q0-24 18-42t42-18h269q24 0 42 18t18 42v288h65q20.63 0 35.31 14.69Q664-462.63 664-442v219q0 21.68 15.5 36.34Q695-172 717-172t37.5-14.66Q770-201.32 770-223v-295q-11 6-23 9t-24 3q-39.48 0-66.74-27.26Q629-560.52 629-600q0-31.61 18-56.81Q665-682 695-690l-77-77q-8-7.64-8-17.82t8-18.18q8-8 18-7.5t18 8.5l135 135q14 14 22.5 30.5T820-600v377q0 43.26-29.82 73.13-29.81 29.87-73 29.87Q674-120 644-149.87q-30-29.87-30-73.13v-219h-65v292q0 12.75-8.62 21.37Q531.75-120 519-120H190q-12.75 0-21.37-8.63Q160-137.25 160-150Zm60-402h269v-228H220v228Zm503-4q18 0 31-13t13-31q0-18-13-31t-31-13q-18 0-31 13t-13 31q0 18 13 31t31 13Z\"/>","airplane":"<path d=\"M409-421 137-311q-20 8-38.5-4T80-350v-18q0-11 5-19.5T98-402l311-219v-188q0-29 21-50t50-21q29 0 50 21t21 50v188l311 219q8 6 13 14.5t5 19.5v18q0 23-18.5 35t-38.5 4L551-421v172l109 76q7 5 11 12.5t4 15.5v19q0 17-13.5 27.5T631-93l-151-46-151 46q-17 5-30.5-5.5T285-126v-19q0-8 4-15.5t11-12.5l109-76v-172Z\"/>","house":"<path d=\"M160-180v-390q0-14.25 6.38-27 6.37-12.75 17.62-21l260-195q15.68-12 35.84-12Q500-825 516-813l260 195q11.25 8.25 17.63 21 6.37 12.75 6.37 27v390q0 24.75-17.62 42.37Q764.75-120 740-120H590q-12.75 0-21.37-8.63Q560-137.25 560-150v-220q0-12.75-8.62-21.38Q542.75-400 530-400H430q-12.75 0-21.37 8.62Q400-382.75 400-370v220q0 12.75-8.62 21.37Q382.75-120 370-120H220q-24.75 0-42.37-17.63Q160-155.25 160-180Z\"/>","lightning":"<path d=\"M360-360H217q-18 0-26.5-16t2.5-31l338-488q8-11 20-15t24 1q12 5 19 16t5 24l-39 309h176q19 0 27 17t-4 32L388-66q-8 10-20.5 13T344-55q-11-5-17.5-16T322-95l38-265Z\"/>","drop":"<path d=\"M251.5-174Q160-268 160-408q0-64 29-127t72.5-121q43.5-58 94-108.5T450-854q7-6 14.5-8.5T480-865q8 0 15.5 2.5T510-854q44 39 94.5 89.5t94 108.5Q742-598 771-535t29 127q0 140-91.5 234T480-80q-137 0-228.5-94ZM479-208q16 0 24.5-5.5T512-230q0-11-8.5-17t-25.5-6q-42 0-85.5-26.5T337-373q-2-9-9-14.5t-15-5.5q-11 0-17 8.5t-4 17.5q15 84 71 121.5T479-208Z\"/>","wifi-high":"<path d=\"M417-154q-27-27-27-63t27-63q27-27 63-27t63 27q27 27 27 63t-27 63q-27 27-63 27t-63-27Zm209-378.5Q694-505 757-451q14 12 15 30.5T759-388q-14 14-32 13t-33-13q-53-44-106.5-63T480-470q-54 0-107.5 19T266-388q-15 12-33 13t-32-13q-14-14-13-32.5t15-30.5q63-54 131-81.5T480-560q78 0 146 27.5Zm95.5-219Q835-703 926-622q14 13 15.5 31.5T929-558q-14 14-33.5 13.5T861-558q-83-70-178-111t-203-41q-108 0-203 41T99-558q-15 13-34 13.5T32-558q-14-14-13-32.5T34-622q91-81 204.5-129.5T480-800q128 0 241.5 48.5Z\"/>","device-mobile":"<path d=\"M260-40q-25 0-42.5-17.5T200-100v-760q0-24 18-42t42-18h438q25 0 42.5 17.5T758-860v150q18 3 30 17t12 32v74q0 19-12 33t-30 17v437q0 25-17.5 42.5T698-40H260Zm240-689q9-9 9-21t-9-21q-9-9-21-9t-21 9q-9 9-9 21t9 21q9 9 21 9t21-9Z\"/>","repeat":"<path d=\"M220-478q0 20 2.5 39t7.5 36q3 12-1.5 24T213-362q-11 5-22.5 0T175-378q-8-25-11.5-49.5T160-478q0-131 94.5-225.5T480-798h43l-61-61q-8-8-8-19t8-19q8-8 19.5-8t19.5 8l109 108q9 9 9 21t-9 21L502-639q-8 8-20 8t-20-8q-8-8-8-20t8-20l59-59h-41q-107 0-183.5 76.5T220-478Zm520-1q0-20-2.5-39t-7.5-37q-4-12 .5-24t15.5-17q11-5 22 0t15 16q9 25 13 50t4 51q0 131-94.5 225.5T480-159h-45l61 61q8 8 8 19t-8 19q-8 8-19.5 8T457-60L348-168q-9-9-9-21t9-21l109-109q8-8 19.5-8t19.5 8q8 8 8 19.5t-8 19.5l-61 61h45q107 0 183.5-76.5T740-479Z\"/>","film-slate":"<path d=\"m140-800 58 119q8 15 22 24t31 9q32 0 49-27.5t3-56.5l-33-68h89l58 119q8 15 22 24t31 9q32 0 49-27.5t3-56.5l-33-68h89l58 119q8 15 22 24t31 9q32 0 49-27.5t3-56.5l-33-68h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Z\"/>","popcorn":"<path d=\"M220-180v30.18q0 12.82-8.68 21.32-8.67 8.5-21.5 8.5-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-660q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v30h120v-30.18q0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h220q12.75 0 21.38 8.62Q620-822.75 620-810v30h120v-30.18q0-12.82 8.68-21.32 8.67-8.5 21.5-8.5 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v660q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-30H620v30.18q0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H370q-12.75 0-21.37-8.63Q340-137.25 340-150v-30H220Zm0-60h120v-120H220v120Zm0-180h120v-120H220v120Zm0-180h120v-120H220v120Zm400 360h120v-120H620v120Zm0-180h120v-120H620v120Zm0-180h120v-120H620v120Z\"/>","music-notes":"<path d=\"M286.5-163.5Q243-207 243-270t43.5-106.5Q330-420 393-420q28 0 50.5 8t39.5 22v-420q0-13 8.5-21.5T513-840h174q13 0 21.5 8.5T717-810v75q0 13-8.5 21.5T687-705H543v435q0 63-43.5 106.5T393-120q-63 0-106.5-43.5Z\"/>","game-controller":"<path d=\"M147-200q-38 0-59.5-25.5T72-296l48-335q8-53 49.5-91t94.5-38h433q53 0 94.5 38t49.5 91l47 335q6 45-15.5 70.5T813-200q-23 0-39-7.5T747-226L643-330H317L213-226q-11 11-27 18.5t-39 7.5Zm581-252q12-12 12-28t-12-28q-12-12-28-12t-28 12q-12 12-12 28t12 28q12 12 28 12t28-12Zm-85-130q12-12 12-28t-12-28q-12-12-28-12t-28 12q-12 12-12 28t12 28q12 12 28 12t28-12Zm-343 62v50q0 11 7 18t18 7q11 0 18-7t7-18v-50h50q11 0 18-7t7-18q0-11-7-18t-18-7h-50v-50q0-11-7-18t-18-7q-11 0-18 7t-7 18v50h-50q-11 0-18 7t-7 18q0 11 7 18t18 7h50Z\"/>","t-shirt":"<path d=\"m250-569-63 35q-14 8-29.5 4.5T136-546L67-665q-8-14-4.5-24T79-707l228-133h64q11 0 17.5 6.5T395-816v15q0 38 24 62t62 24q38 0 61.5-24t23.5-62v-15q0-11 6.5-17.5T590-840h64l228 133q13 8 16 18t-4 24l-70 119q-6 13-25 17t-30-3l-62-39v412q0 16-12 27.5T667-120H289q-16 0-27.5-11.5T250-159v-410Z\"/>","scissors":"<path d=\"M481-415 364-298q11 17 13.5 33t2.5 35q0 64-43 107T230-80q-64 0-107-43T80-230q0-64 43-107t107-43q18 0 35.5 5t36.5 15l116-116-118-118q-17 8-34.5 11t-35.5 3q-64 0-107-43T80-730q0-64 43-107t107-43q64 0 107 43t43 107q0 19-2.5 36T367-662l468 468q23 23 10.5 51.5T801-114q-9 0-17.5-3.5T768-128L481-415Zm118-112-66-66 235-235q7-7 15.5-10.5T801-842q32 0 43.5 29T834-762L599-527ZM294-666q26-26 26-64t-26-64q-26-26-64-26t-64 26q-26 26-26 64t26 64q26 26 64 26t64-26Zm202.5 203.5Q502-468 502-476t-5.5-13.5Q491-495 483-495t-13.5 5.5Q464-484 464-476t5.5 13.5Q475-457 483-457t13.5-5.5ZM294-166q26-26 26-64t-26-64q-26-26-64-26t-64 26q-26 26-26 64t26 64q26 26 64 26t64-26Z\"/>","pill":"<path d=\"m661-342 113-114q32-32 49-73t17-86q0-94-65.5-159.5T615-840q-45 0-86 17t-73 49L342-661l319 319ZM345-120q45 0 86-17t73-49l114-113-319-319-113 114q-32 32-49 73t-17 86q0 94 65.5 159.5T345-120Z\"/>","first-aid":"<path d=\"M140-80q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h180v-100q0-24 18-42t42-18h200q24 0 42 18t18 42v100h180q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm240-640h200v-100H380v100Zm70 350v90q0 12.75 8.68 21.37 8.67 8.63 21.5 8.63 12.82 0 21.32-8.63 8.5-8.62 8.5-21.37v-90h90q12.75 0 21.38-8.68 8.62-8.67 8.62-21.5 0-12.82-8.62-21.32-8.63-8.5-21.38-8.5h-90v-90q0-12.75-8.68-21.38-8.67-8.62-21.5-8.62-12.82 0-21.32 8.62-8.5 8.63-8.5 21.38v90h-90q-12.75 0-21.37 8.68-8.63 8.67-8.63 21.5 0 12.82 8.63 21.32 8.62 8.5 21.37 8.5h90Z\"/>","tooth":"<path d=\"M680-875q66 0 113 47t47 113q0 11-1.5 29.5T834-643l-55 403q-5 41-36 63.5T677-154q-21 0-41-9t-34-29L495-348q-2-3-6.5-5t-9.5-2q-2 0-16 9L359-195q-14 21-35 31t-43 10q-35 0-65.5-22.5T180-241l-54-402q-3-24-4.5-42.5T120-715q0-66 47-113t113-47q36 0 57.5 9.5T379-845q20 11 42.5 20.5T480-815q36 0 58.5-9.5T581-845q20-11 42-20.5t57-9.5Z\"/>","barbell":"<path d=\"M268-650 147-529q-9 9-21 9t-21-9q-8-8-8.5-20.5T104-571l36-37-35-35q-9-9-9-21t9-21l64-64-21-21q-9-9-9-21t9-21q8-8 20.5-8.5T190-813l22 21 63-63q9-9 21-9t21 9l35 35 37-36q9-8 21-8t21 9q9 9 9 21t-9 21L310-692l382 382 121-121q9-9 21-9t21 9q8 8 8.5 20.5T856-389l-36 37 35 35q9 9 9 21t-9 21l-65 65 21 21q9 9 9 21t-9 21q-9 9-21 9t-21-9l-21-21-63 63q-9 9-21 9t-21-9l-35-35-37 36q-9 8-21 8t-21-9q-9-9-9-21t9-21l121-121-382-382Z\"/>","graduation-cap":"<path d=\"M860-313v-252L508-375q-14 8-29 7.5t-29-8.5L88-574q-8-5-11.5-11.5T73-600q0-8 3.5-14.5T88-626l362-198q7-4 14-6t15-2q8 0 15 2t14 6l396 215q8 4 12 11.5t4 15.5v269q0 13-8.5 21.5T890-283q-13 0-21.5-8.5T860-313ZM450-136 220-262q-14-8-22.5-22t-8.5-31v-174l261 143q14 8 29 8t29-8l261-143v174q0 17-8.5 31T738-262L508-136q-7 4-14 6t-15 2q-8 0-15-2t-14-6Z\"/>","book-open":"<path d=\"M512-250q50-25 98-37.5T712-300q38 0 78.5 6t69.5 16v-429q-34-17-72-25t-76-8q-54 0-104.5 16.5T512-677v427Zm-44.5 77.5Q461-174 456-178q-47-29-100-45t-108-16q-37 0-72 9t-70 22q-23 11-44.5-3T40-251v-463q0-15 7-27.5T68-761q42-20 87.5-29.5T248-800q63 0 122.5 17T482-731q51-35 109.5-52T712-800q47 0 92 9.5t87 29.5q14 7 21.5 19.5T920-714v463q0 28-22.5 42.5t-44.5.5q-34-14-69-22.5t-72-8.5q-54 0-106 16t-98 45q-5 4-11.5 5.5T482-171q-8 0-14.5-1.5ZM560-608q0-6 4-11.5t9-7.5q30-11 61.5-17t65.5-6q22 0 43 2.5t41 7.5q6 2 11 7.5t5 12.5q0 11-7.5 17t-18.5 3q-17-5-35.5-7.5T700-610q-29 0-56 5.5T591-588q-14 5-22.5-.5T560-608Zm0 220q0-6 4-12t9-8q30-11 61.5-16.5T700-430q22 0 43 2.5t41 7.5q6 2 11 7.5t5 12.5q0 11-7.5 17t-18.5 3q-17-5-35.5-7.5T700-390q-29 0-56 5t-53 16q-14 5-22.5 0t-8.5-19Zm0-110q0-6 4-11.5t9-7.5q30-11 61.5-17t65.5-6q22 0 43 2.5t41 7.5q6 2 11 7.5t5 12.5q0 11-7.5 17t-18.5 3q-17-5-35.5-7.5T700-500q-29 0-56 5.5T591-478q-14 5-22.5-.5T560-498Z\"/>","briefcase":"<path d=\"M140-120q-24 0-42-18t-18-42v-480q0-24 18-42t42-18h180v-100q0-24 18-42t42-18h200q24 0 42 18t18 42v100h180q24 0 42 18t18 42v480q0 24-18 42t-42 18H140Zm240-600h200v-100H380v100Z\"/>","bed":"<path d=\"M80-230v-225q0-25 10-47t30-36v-116q0-45 30.5-75.5T226-760h180q22 0 41 10t33 27q14-17 32.5-27t40.5-10h180q45 0 76 30.5t31 75.5v116q20 14 30 36t10 47v225q0 13-8.5 21.5T850-200q-13 0-21.5-8.5T820-230v-50H140v50q0 13-8.5 21.5T110-200q-13 0-21.5-8.5T80-230Zm430-325h270v-99q0-20-13.5-33T733-700H550q-17 0-28.5 14T510-654v99Zm-330 0h270v-99q0-18-11.5-32T410-700H226q-19 0-32.5 13.5T180-654v99Z\"/>","gift":"<path d=\"M140-277v97h680v-97H140Zm0-443h125q-5-9-8-22.5t-3-24.5q0-47 33-80t79-33q31 0 57 15.5t41 39.5l16 26 17-26q16-25 41-40t54-15q48 0 81 32.5t33 80.5q0 11-2.5 22t-7.5 25h124q24 0 42 18t18 42v480q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-480q0-24 18-42t42-18Zm0 336h680v-276H571l83 115q8 10 5.5 22T647-503q-10 8-22 6t-20-13L480-683 355-510q-8 11-19.5 13t-22.5-6q-10-8-12.5-20t5.5-22l83-115H140v276Zm264.5-345.5Q420-745 420-767t-15.5-37.5Q389-820 367-820t-37.5 15.5Q314-789 314-767t15.5 37.5Q345-714 367-714t37.5-15.5ZM592-714q23 0 38.5-15.5T646-767q0-22-15.5-37.5T592-820q-21 0-36.5 15.5T540-767q0 22 15.5 37.5T592-714Z\"/>","heart":"<path d=\"M458-144q-11-4-19-12l-53-49Q262-320 171-424.5T80-643q0-90 60.5-150.5T290-854q51 0 101 24.5t89 80.5q44-56 91-80.5t99-24.5q89 0 149.5 60.5T880-643q0 114-91 218.5T574-205l-53 49q-8 8-19 12t-22 4q-11 0-22-4Z\"/>","baby":"<path d=\"M616-515q13-13 13-32t-13-32q-13-13-32-13t-32 13q-13 13-13 32t13 32q13 13 32 13t32-13Zm-209 0q13-13 13-32t-13-32q-13-13-32-13t-32 13q-13 13-13 32t13 32q13 13 32 13t32-13Zm174 200q47-29 73-80H306q26 51 73 80t101 29q54 0 101-29ZM340.5-148.5Q275-177 226-226t-77.5-114.5Q120-406 120-480t28.5-139.5Q177-685 226-734t114.5-77.5Q406-840 480-840t139.5 28.5Q685-783 734-734t77.5 114.5Q840-554 840-480t-28.5 139.5Q783-275 734-226t-114.5 77.5Q554-120 480-120t-139.5-28.5ZM495-638q29 0 44-8.5t15-24.5q0-9-6.5-14.5T530-691q-7 0-15 1.5t-20 1.5q-25 0-41.5-16.5T437-746q0-10 1.5-20.5T442-784q-14 2-26 4.5t-26 7.5q-2 5-2.5 12.5T387-746q0 46 31 77t77 31Z\"/>","dog":"<path d=\"M169.86-485Q132-485 106-511.14t-26-64Q80-613 106.14-639t64-26Q208-665 234-638.86t26 64Q260-537 233.86-511t-64 26ZM291-681.14q-26-26.14-26-64T291.14-809q26.14-26 64-26T419-808.86q26 26.14 26 64T418.86-681q-26.14 26-64 26T291-681.14Zm250 0q-26-26.14-26-64T541.14-809q26.14-26 64-26T669-808.86q26 26.14 26 64T668.86-681q-26.14 26-64 26T541-681.14ZM789.86-485Q752-485 726-511.14t-26-64Q700-613 726.14-639t64-26Q828-665 854-638.86t26 64Q880-537 853.86-511t-64 26ZM266-75q-42 0-69-31.53-27-31.52-27-74.47 0-42 25.5-74.5T250-318q22-22 41-46.5t36-50.5q29-44 65-82t88-38q52 0 88.5 38t65.5 83q17 26 35.5 50t40.5 46q29 30 54.5 62.5T790-181q0 42.95-27 74.47Q736-75 694-75q-54 0-107-9t-107-9q-54 0-107 9t-107 9Z\"/>","paw-print":"<path d=\"M380-80q-75 0-127.5-52.5T200-260q0-32 14.5-60.5T263-383q15-15 24-25t19-22q-51-78-78.5-163.5T200-760q0-58 21-89t59-31q42 0 87 41t79 109q10 20 18.5 41.5T480-641q7-26 15.5-47.5T514-730q34-68 79-109t87-41q38 0 59 31t21 89q0 81-27.5 166.5T654-430q10 12 19 22t24 25q34 34 48.5 62.5T760-260q0 75-52.5 127.5T580-80q-45 0-72.5-10L480-100l-27.5 10Q425-80 380-80Zm0-60q17 0 40-5.5t49-16.5q-11-5-20-17t-9-21q0-8 11.5-14t28.5-6q17 0 28.5 6t11.5 14q0 9-9 21t-20 17q26 11 49 16.5t40 5.5q50 0 85-35t35-85q0-22-12-43t-35-41q-11-10-24.5-24T604-396q-32-42-55-53t-69-11q-46 0-69 11t-55 53q-11 14-24.5 28T307-344q-23 20-35 41t-12 43q0 50 35 85t85 35Zm40-150q-8 0-14-9t-6-21q0-12 6-21t14-9q8 0 14 9t6 21q0 12-6 21t-14 9Zm120 0q-8 0-14-9t-6-21q0-12 6-21t14-9q8 0 14 9t6 21q0 12-6 21t-14 9ZM347-477q21-20 41.5-29.5T439-519q-5-51-17-99.5T391-705q-23-47-53-78.5T275-826q-8 15-11.5 32t-3.5 34q0 72 22.5 144.5T347-477Zm266 0q42-66 64.5-138.5T700-760q0-17-3.5-34T685-826q-33 11-63 42.5T569-705q-19 38-31 86.5T521-519q30 3 50.5 12.5T613-477Z\"/>","sparkle":"<path d=\"M788.5-362q12.5 0 21.5 9l63 64q9 9 9 21t-9 21q-9 9-21 9t-21-9l-64-63q-9-9-9-21.5t9-21.5q9-9 21.5-9ZM802-811.5q0 12.5-9 21.5l-63 63q-9 9-21.5 9t-21.5-9q-9-9-9-21.5t9-21.5l64-63q9-9 21-9t21 9q9 9 9 21.5ZM188.5-842q12.5 0 21.5 9l63 64q9 9 9 21t-9 21q-9 9-21 9t-21-9l-64-63q-9-9-9-21.5t9-21.5q9-9 21.5-9ZM202-331.5q0 12.5-9 21.5l-63 63q-9 9-21.5 9T87-247q-9-9-9-21t9-21l64-64q9-9 21-9t21 9q9 9 9 21.5ZM480-269 294-157q-8 5-17 4.5t-16-5.5q-7-5-10.5-13t-1.5-18l49-212-164-143q-8-7-9.5-15.5t.5-16.5q2-8 9-13.5t17-6.5l217-19 84-200q4-9 12-13.5t16-4.5q8 0 16 4.5t12 13.5l84 200 217 19q10 1 17 6.5t9 13.5q2 8 .5 16.5T826-544L662-401l49 212q2 10-1.5 18T699-158q-7 5-16 5.5t-17-4.5L480-269Z\"/>","wrench":"<path d=\"M354-370q-97 0-165-67.5T121-602q0-20 3-37.5t11-36.5q3-8 9-12t13-6q7-2 14 0t13 8l113 113 92-86-118-118q-6-6-8-13t0-14q2-7 6-12.5t12-8.5q19-8 36-11.5t37-3.5q99 0 168.5 69.5T592-602q0 24-5 47t-13 46l221 221q27 26 26.5 63.5T793-161q-26 24-61.5 23.5T670-164L447-388q-23 8-46 13t-47 5Z\"/>","receipt":"<path d=\"M222-80q-43.75 0-74.37-30.63Q117-141.25 117-185v-95q0-12.75 8.63-21.38Q134.25-310 147-310h97v-552q0-5.25 4.5-7.13Q253-871 257-867l36 36q4.64 5 10.82 5 6.18 0 11.18-5l38-38q4.64-5 10.82-5 6.18 0 11.18 5l37 38q4.64 5 10.82 5 6.18 0 11.18-5l38-38q4.64-5 10.82-5 6.18 0 11.18 5l38 38q4.64 5 10.82 5 6.18 0 11.18-5l38-38q4.64-5 10.82-5 6.18 0 11.18 5l38 38q4.64 5 10.82 5 6.18 0 11.18-5l38-38q4.64-5 10.82-5 6.18 0 11.18 5l38 38q4.64 5 10.82 5 6.18 0 11.18-5l36-36q4-4 8.5-2.13 4.5 1.88 4.5 7.13v677q0 43.75-30.62 74.37Q781.75-80 738-80H222Zm514.5-60q19.5 0 31.5-12.5t12-32.5v-611H307v536h360q12.75 0 21.38 8.62Q697-242.75 697-230v45q0 20 10 32.5t29.5 12.5ZM390-702h180q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H390q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5Zm0 134h180q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H390q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5Zm303-74q-12 0-21-9t-9-21q0-12 9-21t21-9q12 0 21 9t9 21q0 12-9 21t-21 9Zm0 129q-12 0-21-9t-9-21q0-12 9-21t21-9q12 0 21 9t9 21q0 12-9 21t-21 9Z\"/>","credit-card":"<path d=\"M140-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h680q24 0 42 18t18 42v520q0 24-18 42t-42 18H140Zm0-342h680v-129H140v129Z\"/>","money":"<path d=\"M100-160q-24.75 0-42.37-17.63Q40-195.25 40-220v-430q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v430h670q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H100Zm120-120q-24.75 0-42.37-17.63Q160-315.25 160-340v-400q0-24.75 17.63-42.38Q195.25-800 220-800h640q24.75 0 42.38 17.62Q920-764.75 920-740v400q0 24.75-17.62 42.37Q884.75-280 860-280H220Zm100-60q0-42-29-71t-71-29v100h100Zm440 0h100v-100q-42 0-71 29t-29 71Zm-220-80q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM220-640q42 0 71-29t29-71H220v100Zm640 0v-100H760q0 42 29 71t71 29Z\"/>","piggy-bank":"<path d=\"M230-120q-21 0-39.49-13.96Q172.02-147.93 166-168q-25-86-41.54-148.46-16.54-62.46-26.37-109.68-9.82-47.22-13.95-83.79Q80-546.49 80-580q0-92 64-156t156-64h200q27-36 68.5-58t91.5-22q25 0 42.5 17.5T720-820q0 6-1.5 12t-3.5 11q-4 11-7.5 22t-5.5 24l91 91h57q12.75 0 21.38 8.62Q880-642.75 880-630v227q0 10.24-5.5 18.12Q869-377 859-374l-91.93 30.3L713-163q-6.03 19.61-21.84 31.31Q675.34-120 655-120H540q-24.75 0-42.37-17.63Q480-155.25 480-180v-20h-80v20q0 24.75-17.62 42.37Q364.75-120 340-120H230Zm438.5-411.5Q680-543 680-560t-11.5-28.5Q657-600 640-600t-28.5 11.5Q600-577 600-560t11.5 28.5Q623-520 640-520t28.5-11.5ZM490-620q12.75 0 21.38-8.68 8.62-8.67 8.62-21.5 0-12.82-8.62-21.32-8.63-8.5-21.38-8.5H350q-12.75 0-21.37 8.68-8.63 8.67-8.63 21.5 0 12.82 8.63 21.32 8.62 8.5 21.37 8.5h140Z\"/>","bank":"<path d=\"M212-271v-279q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v279q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37Zm242 0v-279q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v279q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37ZM110-121q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32Q97.25-181 110-181h740q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H110Zm578-150v-279q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v279q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37Zm166-369H103q-9.58 0-16.29-6.71Q80-653.42 80-663v-17q0-6 3.5-11.5T92-700l358-204q14.17-8 30-8t30 8l357 203q6 4 9.5 10t3.5 13.5v10.23q0 11.59-7.47 19.43Q865.05-640 854-640Z\"/>","tag":"<path d=\"M863-404 557-97q-9 8.5-20.25 12.75T514.25-80Q503-80 492-84.5T472-97L98-472q-8-8-13-18.96-5-10.95-5-23.04v-306q0-24.75 17.63-42.38Q115.25-880 140-880h307q12.07 0 23.39 4.87Q481.7-870.25 490-862l373 373q9.39 9 13.7 20.25 4.3 11.25 4.3 22.5t-4.5 22.75Q872-412 863-404ZM245-664q21 0 36.5-15.5T297-716q0-21-15.5-36.5T245-768q-21 0-36.5 15.5T193-716q0 21 15.5 36.5T245-664Z\"/>","dots-three-outline":"<path d=\"M207.86-432Q188-432 174-446.14t-14-34Q160-500 174.14-514t34-14Q228-528 242-513.86t14 34Q256-460 241.86-446t-34 14Zm272 0Q460-432 446-446.14t-14-34Q432-500 446.14-514t34-14Q500-528 514-513.86t14 34Q528-460 513.86-446t-34 14Zm272 0Q732-432 718-446.14t-14-34Q704-500 718.14-514t34-14Q772-528 786-513.86t14 34Q800-460 785.86-446t-34 14Z\"/>"};
+  function isIcon(name){ return !!(PH[name] || PH_CAT[name]); }
+  function phSvg(name, fill){ var d = PH_CAT[name] || (fill && PH_FILL[name]) || PH[name]; return d ? '<svg class="phi" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">' + d + '</svg>' : ""; }
+  function phEl(name, cls){ var e = document.createElement("span"); e.className = "phw" + (cls ? " " + cls : ""); e.innerHTML = phSvg(name); return e; }
+  [].forEach.call(document.querySelectorAll("[data-ph]"), function(e){ e.innerHTML = phSvg(e.dataset.ph, e.hasAttribute("data-fill")) + e.innerHTML; });
   // Apps Script deployment ใหม่ (Who has access: Anyone) — ทุกคำขอต้องมี Google ID token ของเจ้าของ
   var API_URL = "https://script.google.com/macros/s/AKfycbz4eCphR0802TUibvupqIXLfy5iW6i4_Rkt4PANARqNYcrFXq2_EfYldh1JL6e3lC0u/exec";
   var CLIENT_ID = "357323598002-heul0ai5997qh9qj9d79ek3gfeh1ab00.apps.googleusercontent.com";
   var OWNER_EMAIL = "kkbnjsth@gmail.com";
   var DEFAULT_CARDS = {}; // real list comes from the Cards tab after sign-in
   try { if (localStorage.getItem("masked")) document.documentElement.classList.add("masked"); } catch (e) {}
-  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [] };
+  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [], hidden: {}, cats: null };
 
   function $(id){ return document.getElementById(id); }
   function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
@@ -447,14 +687,26 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     return b;
   }
 
+  function isYes(v){ return /^(true|yes|y|1|x|✓)$/i.test(String(v == null ? "" : v).trim()); }
+  // Cards tab: A=Card, B=Cycle start day, C=Hidden. Hidden cards keep their cycle so old rows still add up.
   function parseCards(values){
-    var c = {};
+    var c = {}, h = {};
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [];
       var day = parseInt(r[1], 10);
-      if (r[0] && day >= 1 && day <= 28) c[String(r[0])] = day;
+      if (r[0] && day >= 1 && day <= 28) { c[String(r[0])] = day; if (isYes(r[2])) h[String(r[0])] = true; }
     }
-    return Object.keys(c).length ? c : null;
+    return Object.keys(c).length ? { days: c, hidden: h } : null;
+  }
+  // Categories tab: A=Category, B=Icon, C=Hidden. null (no tab) = the built-in list below.
+  function parseCats(values){
+    if (!values) return null;
+    var out = [];
+    for (var i = 1; i < values.length; i++) {
+      var r = values[i] || [];
+      if (String(r[0] || "").trim()) out.push({ name: String(r[0]).trim(), icon: String(r[1] || "").trim(), hidden: isYes(r[2]) });
+    }
+    return out;
   }
 
 
@@ -471,10 +723,19 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var body = $("body"); body.textContent = "";
     var seg = $("seg"); seg.textContent = "";
     if (!state.rows) { $("cyc").hidden = true; seg.hidden = true; $("cardpick").hidden = true; return; }
+    var tab = state.tab || "sum";
+    syncTabs(tab);
+    if (tab === "owe") {
+      ["cyc", "due", "hero", "dots", "cardpick", "searchBox"].forEach(function(id){ $(id).hidden = true; });
+      seg.hidden = true; state.swipeCards = null; renderOwePage(body); return;
+    }
 
     var names = Object.keys(state.cards);
     state.rows.forEach(function(r){ if (r.card && r.card !== state.cash && names.indexOf(r.card) < 0) names.push(r.card); });
     var options = names.concat(["All", state.cash, "Salary"]);
+    // `names` (every card) drives the totals; hidden cards drop out of the picker, swipe and chips unless open now.
+    var all = names;
+    names = all.filter(function(n){ return !state.hidden[n] || n === state.sel; });
     if (!state.sel || options.indexOf(state.sel) < 0) state.sel = names[0] || "All";
     var isSalary = state.sel === state.cash || state.sel === "Salary";
 
@@ -493,20 +754,20 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       seg.appendChild(b);
     });
     seg.hidden = false;
+    slideIndicator(seg, "view");
     var pick = $("cardpick"); pick.textContent = ""; pick.hidden = !isCard;
     if (isCard) {
       pick.appendChild(cardThumb(state.sel, "cthumb lg"));
       pick.appendChild(el("span", "nm", state.sel));
-      pick.appendChild(el("span", "caret", "▼"));
+      var ct = el("span", "caret"); ct.innerHTML = phSvg("caret-down"); pick.appendChild(ct);
       pick.setAttribute("aria-label", "เปลี่ยนบัตร (ตอนนี้ " + state.sel + ")");
       pick.onclick = function(){ openCards(names); };
     }
     if ($("cardSheet").hidden === false) renderCards(names);
 
-    $("searchBox").hidden = !(state.searchOpen || state.q);
-    $("searchBtn").setAttribute("aria-pressed", String(!$("searchBox").hidden));
+    $("searchBox").hidden = tab !== "list";
     // Swipe the hero left/right to step through cards (card view only); the dots show where you are.
-    state.swipeCards = isCard && names.length > 1 && !state.q ? names : null;
+    state.swipeCards = tab === "sum" && isCard && names.length > 1 ? names : null;
     $("hero").classList.toggle("swipe", !!state.swipeCards);
     var dots = $("dots"); dots.textContent = ""; dots.hidden = !state.swipeCards;
     if (state.swipeCards) {
@@ -515,11 +776,12 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       else names.forEach(function(n, i){ dots.appendChild(el("i", i === at ? "on" : null)); });
     }
     // Only the last ~7 months come down at first; going further back (or searching) fetches everything once.
-    if (!state.full && (state.q || state.offset <= -5)) loadAll();
-    if (state.q) { $("cyc").hidden = true; $("due").hidden = true; $("hero").hidden = true; renderSearch(body); return; }
+    var searching = tab === "list" && !!state.q;
+    if (!state.full && (searching || state.offset <= -5)) loadAll();
+    if (searching) { $("cyc").hidden = true; $("due").hidden = true; $("hero").hidden = true; renderSearch(body); return; }
 
     // transactions in the selected cycle(s)
-    var list = rowsFor(state.offset, names, isSalary), rangeText = "", subText = "";
+    var list = rowsFor(state.offset, all, isSalary), rangeText = "", subText = "";
     if (isSalary) {
     var sy = cycleFor(state.salaryDay, state.offset);
     rangeText = dstr(sy.start) + " – " + dstr(sy.end);
@@ -541,7 +803,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var cyD = isSalary ? cycleFor(state.salaryDay, state.offset) : cycleFor(state.cards[state.sel] || 28, state.offset);
       var totalDays = Math.round((cyD.end - cyD.start) / 86400000) + 1;
       var elapsed = state.offset < 0 ? totalDays : Math.min(totalDays, Math.max(0, Math.round((today() - cyD.start) / 86400000) + 1));
-      $("due").hidden = false;
+      $("due").hidden = true; // the day count rides on the cycle line instead of its own bar
+      sm.textContent += " · วันที่ " + elapsed + "/" + totalDays;
       $("dfill").style.width = (elapsed / totalDays * 100) + "%";
       $("dl").textContent = "วันที่ " + elapsed + " จาก " + totalDays;
       $("dr").textContent = (isSalary ? "สิ้นสุด " : "ตัดรอบ ") + dstr(cyD.end);
@@ -560,8 +823,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var lr = el("div", "lblrow"); lr.appendChild(el("div", "lbl", "ยอดรวม"));
     var eye = el("button", "eye"); eye.type = "button"; eye.setAttribute("aria-label", "ซ่อน/แสดงยอดเงิน");
     eye.setAttribute("aria-pressed", String(document.documentElement.classList.contains("masked")));
-    eye.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg>';
-    eye.onclick = function(){ var m = document.documentElement.classList.toggle("masked"); eye.setAttribute("aria-pressed", String(m)); try { localStorage.setItem("masked", m ? "1" : ""); } catch (e) {} };
+    eye.innerHTML = phSvg(document.documentElement.classList.contains("masked") ? "eye-slash" : "eye");
+    eye.onclick = function(){ var m = document.documentElement.classList.toggle("masked"); eye.setAttribute("aria-pressed", String(m)); eye.innerHTML = phSvg(m ? "eye-slash" : "eye"); try { localStorage.setItem("masked", m ? "1" : ""); } catch (e) {} };
     lr.appendChild(eye); hl.appendChild(lr);
     hl.appendChild(el("div", "amt", "฿" + fmt(total)));
     htop.appendChild(hl);
@@ -572,10 +835,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     hero.appendChild(htop);
     var sp = el("div", "split");
-    var p = el("div", "p btn" + (state.filter === "paid" ? " on" : "")); p.appendChild(legend("Paid", C_MID)); p.appendChild(el("b", null, "฿" + fmt(paid)));
-    var q = el("div", "q btn" + (state.filter === "pending" ? " on" : "")); q.appendChild(legend("Pending", C_LIME)); q.appendChild(el("b", null, "฿" + fmt(pend)));
-    p.onclick = function(){ state.filter = state.filter === "paid" ? "all" : "paid"; render(); };
-    q.onclick = function(){ state.filter = state.filter === "pending" ? "all" : "pending"; render(); };
+    var p = el("div", "p btn"); p.appendChild(legend("Paid", C_MID)); p.appendChild(el("b", null, "฿" + fmt(paid)));
+    // Pending dot uses the same orange as every other Pending in the app (not the card gradient lime).
+    var q = el("div", "q btn"); q.appendChild(legend("Pending", "var(--pending)")); q.appendChild(el("b", null, "฿" + fmt(pend)));
+    p.onclick = function(){ state.filter = "paid"; goTab("list"); };
+    q.onclick = function(){ state.filter = "pending"; goTab("list"); };
     sp.appendChild(p); sp.appendChild(q); hero.appendChild(sp);
     var splitRows = list.filter(function(r){ return r.parts && r.parts.length; });
     if (splitRows.length) {
@@ -586,9 +850,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 
     if (state.sel === "All") {
       var strip = el("div", "strip");
-      names.forEach(function(n){
+      all.forEach(function(n){
         var cyN = cycleFor(state.cards[n] || 28, state.offset);
         var rowsN = state.rows.filter(function(r){ return r.card === n && r.date >= cyN.start && r.date <= cyN.end; });
+        if (state.hidden[n] && !rowsN.length) return;
         var totalN = rowsN.reduce(function(a, r){ return a + r.cost; }, 0);
         var stN = stampFor(cyN, n, totalN, rowsN.length);
         var it = el("div", "it"), nm = el("span", "nm");
@@ -601,48 +866,117 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       hero.appendChild(strip);
     }
 
-    if (state.offset === 0) renderDue(body);
-    var owed = {}, owedTotal = 0;
-    state.rows.forEach(function(r){ others(r.parts).forEach(function(p){
-      if (!p.done && p.amt) { var o = owed[p.name] || (owed[p.name] = { amt: 0, n: 0 }); o.amt += p.amt; o.n++; owedTotal += p.amt; }
-    }); });
-    var owedNames = Object.keys(owed);
-    if (owedNames.length) {
-      var ow = el("div", "sec owe"), oh = el("h2", null, "ค้างจ่ายคืน"); oh.appendChild(el("small", null, "รวม ฿" + fmt(owedTotal) + " · แตะชื่อเพื่อดูรายการ")); ow.appendChild(oh);
-      owedNames.sort(function(a, b){ return owed[b].amt - owed[a].amt; }).forEach(function(n){
-        var pr = el("div", "pp"); pr.appendChild(el("span", null, n + " · " + owed[n].n + " รายการ")); pr.appendChild(el("b", null, "฿" + fmt(owed[n].amt)));
-        pr.onclick = function(){ openOwe(n); }; ow.appendChild(pr);
-      });
-      body.appendChild(ow);
+    if (tab !== "sum") hero.hidden = true;
+    if (tab === "list") renderListTab(body, list, shown, nPaid, nPend);
+    else renderSumTab(body, list, all, isSalary);
+  }
+
+  // HeroUI-style tabs: one raised segment slides to the picked option (250ms, HeroUI's ease-out-fluid)
+  // instead of each chip lighting up. Options share the track equally, so the segment is sized and placed
+  // in percentages and stays aligned whatever the width does (scrollbar appearing, rotation). The track is
+  // rebuilt on every render, so the last index is remembered and the segment slides on from there.
+  var segPos = {};
+  function slideIndicator(track, key){
+    var opts = [].slice.call(track.querySelectorAll("button")), i = opts.findIndex(function(b){ return b.getAttribute("aria-pressed") === "true"; });
+    if (i < 0) return;
+    var ind = el("span", "seg-ind"); ind.style.width = "calc((100% - 8px) / " + opts.length + ")";
+    track.insertBefore(ind, track.firstChild);
+    var from = segPos[key];
+    if (from && from.n === opts.length && from.i !== i) {
+      ind.style.transition = "none"; ind.style.transform = "translateX(" + from.i * 100 + "%)";
+      void ind.offsetWidth; ind.style.transition = "";
     }
-    var seg = el("div", "seg");
-    [["all", "ทั้งหมด (" + list.length + ")"], ["pending", "Pending (" + nPend + ")"], ["paid", "Paid (" + nPaid + ")"]].forEach(function(o){
-      var b = el("button", null, o[1]); b.setAttribute("aria-pressed", String(state.filter === o[0]));
+    ind.style.transform = "translateX(" + i * 100 + "%)";
+    segPos[key] = { i: i, n: opts.length };
+  }
+
+  // ---------- Tabs: สรุป (payload above the fold), รายการ (full list + search), คนหาร (who owes me) ----------
+  function goTab(t){ state.tab = t; render(); window.scrollTo(0, 0); }
+  function owedByPerson(){
+    var owed = {}, total = 0;
+    (state.rows || []).forEach(function(r){ others(r.parts).forEach(function(p){
+      if (!p.done && p.amt) { var o = owed[p.name] || (owed[p.name] = { amt: 0, n: 0 }); o.amt += p.amt; o.n++; total += p.amt; }
+    }); });
+    return { by: owed, names: Object.keys(owed).sort(function(a, b){ return owed[b].amt - owed[a].amt; }), total: total };
+  }
+  function syncTabs(tab){
+    [].forEach.call(document.querySelectorAll(".tabbar button"), function(b){ b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false"); });
+    var n = owedByPerson().names.length, bd = document.querySelector(".tabbar .badge");
+    bd.hidden = !n; bd.textContent = n;
+    $("fab").hidden = tab === "owe";
+  }
+  function renderSumTab(body, list, all, isSalary){
+    if (state.offset === 0) renderDue(body);
+    var ow = owedByPerson();
+    if (ow.names.length) {
+      var orow = el("button", "sum-row"); var oi = el("span", "ico2"); oi.innerHTML = phSvg("hand-coins"); orow.appendChild(oi);
+      var ot = el("div", "txt"); ot.appendChild(el("b", null, "ค้างจ่ายคืน " + ow.names.length + " คน"));
+      ot.appendChild(el("small", null, ow.names.slice(0, 3).join(", ") + (ow.names.length > 3 ? " และอีก " + (ow.names.length - 3) : ""))); orow.appendChild(ot);
+      orow.appendChild(el("span", "amt tot", "฿" + fmt(ow.total))); orow.appendChild(el("span", "chev"));
+      orow.onclick = function(){ goTab("owe"); }; body.appendChild(orow);
+    }
+    if (!list.length) { var e = el("div", "sec"); e.appendChild(el("div", "empty", "ไม่มีรายการในรอบนี้ กด ＋ เพื่อเพิ่ม")); body.appendChild(e); return; }
+    // By category: top four, the rest behind a disclosure.
+    var cats = {}, total = 0, prevCats = {}, prevTotal = 0;
+    list.forEach(function(r){ total += r.cost; cats[r.cat] = (cats[r.cat] || 0) + r.cost; });
+    rowsFor(state.offset - 1, all, isSalary).forEach(function(r){ prevCats[r.cat] = (prevCats[r.cat] || 0) + r.cost; prevTotal += r.cost; });
+    var keys = Object.keys(cats).sort(function(a, b){ return cats[b] - cats[a]; });
+    var cs = el("div", "sec"), ch = el("h2", null, "ตามหมวด"), chs = el("small", null, "รอบก่อน ");
+    chs.appendChild(el("span", "tot", "฿" + fmt(prevTotal))); ch.appendChild(chs); cs.appendChild(ch);
+    keys.slice(0, state.catsAll ? keys.length : 4).forEach(function(k){
+      var w = el("div", "cat"), row = el("div", "row");
+      var cl = el("span"); cl.appendChild(catIconEl(k)); cl.appendChild(document.createTextNode(k)); row.appendChild(cl);
+      row.appendChild(el("span", null, "฿" + fmt(cats[k]) + " · " + Math.round(cats[k] / (total || 1) * 100) + "%"));
+      var tr = el("div", "track"), f = el("div", "fill"); f.style.width = Math.max(2, cats[k] / (total || 1) * 100) + "%";
+      tr.appendChild(f); w.appendChild(row); w.appendChild(tr); w.appendChild(deltaEl(cats[k], prevCats[k] || 0)); cs.appendChild(w);
+    });
+    if (keys.length > 4) {
+      var mc = el("button", "more-link", state.catsAll ? "ย่อ" : "ดูอีก " + (keys.length - 4) + " หมวด");
+      mc.onclick = function(){ state.catsAll = !state.catsAll; render(); }; cs.appendChild(mc);
+    }
+    body.appendChild(cs);
+    // Latest three; the whole cycle lives in the รายการ tab.
+    var ls = el("div", "sec"), h2 = el("h2", null, "ล่าสุด"); h2.appendChild(el("small", null, "แตะเพื่อแก้ไข")); ls.appendChild(h2);
+    txList(ls, list.slice().sort(function(a, b){ return b.date - a.date || b.row - a.row; }).slice(0, 3), state.sel === "All" || state.sel === "Salary", false);
+    var more = el("button", "more-link", "ดูทั้งหมด " + list.length + " รายการ"); more.appendChild(el("span", "chev"));
+    more.onclick = function(){ state.filter = "all"; goTab("list"); }; ls.appendChild(more);
+    body.appendChild(ls);
+  }
+  function renderListTab(body, list, shown, nPaid, nPend){
+    // Sliding filter; the segment takes the status colour it filters by, so colour always means Pending / Paid.
+    var seg = el("div", "seg slide"); seg.dataset.tone = state.filter;
+    [["all", "ทั้งหมด", list.length], ["pending", "Pending", nPend], ["paid", "Paid", nPaid]].forEach(function(o){
+      var b = el("button"); b.setAttribute("aria-pressed", String(state.filter === o[0]));
+      if (o[0] !== "all") b.appendChild(el("span", "sdot " + o[0]));
+      b.appendChild(document.createTextNode(o[1] + " ")); b.appendChild(el("span", "n", String(o[2])));
       b.onclick = function(){ state.filter = o[0]; render(); };
       seg.appendChild(b);
     });
+    slideIndicator(seg, "filter");
     body.appendChild(seg);
-
-    if (!shown.length) { var e = el("div", "sec"); e.appendChild(el("div", "empty", list.length ? "ไม่มีรายการที่ตรงกับตัวกรองนี้" : "ไม่มีรายการในรอบนี้")); body.appendChild(e); return; }
-
-    var prevCats = {}, prevTotal = 0;
-    rowsFor(state.offset - 1, names, isSalary).forEach(function(r){
-      if (state.filter === "all" || (state.filter === "paid") === isPaid(r)) { prevCats[r.cat] = (prevCats[r.cat] || 0) + r.cost; prevTotal += r.cost; }
-    });
-    var cs = el("div", "sec"), ch = el("h2", null, "ตามหมวด"), chs = el("small", null, "รอบก่อน ");
-    chs.appendChild(el("span", "tot", "฿" + fmt(prevTotal))); ch.appendChild(chs); cs.appendChild(ch);
-    Object.keys(cats).sort(function(a, b){ return cats[b] - cats[a]; }).forEach(function(k){
-      var w = el("div", "cat"), row = el("div", "row");
-      row.appendChild(el("span", null, catIcon(k) + " " + k));
-      row.appendChild(el("span", null, "฿" + fmt(cats[k]) + " · " + Math.round(cats[k] / (shownTotal || 1) * 100) + "%"));
-      var tr = el("div", "track"), f = el("div", "fill"); f.style.width = Math.max(2, cats[k] / (shownTotal || 1) * 100) + "%";
-      tr.appendChild(f); w.appendChild(row); w.appendChild(tr); w.appendChild(deltaEl(cats[k], prevCats[k] || 0)); cs.appendChild(w);
-    });
-    body.appendChild(cs);
-
-    var ls = el("div", "sec"); var h2 = el("h2", null, "รายการ (" + shown.length + ")"); h2.appendChild(el("small", null, "แตะแถวเพื่อแก้ไข · แตะสถานะเพื่อสลับ")); ls.appendChild(h2);
+    if (!shown.length) { var e = el("div", "sec"); e.appendChild(el("div", "empty", list.length ? "ไม่มีรายการที่ตรงกับตัวกรองนี้" : "ไม่มีรายการในรอบนี้ กด ＋ เพื่อเพิ่ม")); body.appendChild(e); return; }
+    var total = shown.reduce(function(a, r){ return a + r.cost; }, 0);
+    var ls = el("div", "sec"), h2 = el("h2", null, shown.length + " รายการ"); var hs = el("small", null, "รวม "); hs.appendChild(el("span", "tot", "฿" + fmt(total))); h2.appendChild(hs); ls.appendChild(h2);
     txList(ls, shown, state.sel === "All" || state.sel === "Salary", false);
     body.appendChild(ls);
+  }
+  function renderOwePage(body){
+    var ow = owedByPerson();
+    if (!ow.names.length) {
+      var e = el("div", "sec"); e.appendChild(el("div", "mempty", "ไม่มีใครค้างจ่ายคืน ใส่คนหารได้ที่ แบ่งกับคนอื่น ตอนเพิ่มรายการ")); body.appendChild(e); return;
+    }
+    var hd = el("div", "sum-row"); hd.style.cursor = "default"; var hi = el("span", "ico2"); hi.innerHTML = phSvg("hand-coins"); hd.appendChild(hi);
+    var ht = el("div", "txt"); ht.appendChild(el("b", null, "ค้างจ่ายคืนทั้งหมด")); ht.appendChild(el("small", null, ow.names.length + " คน · ทุกบัตร ทุกรอบ")); hd.appendChild(ht);
+    hd.appendChild(el("span", "amt tot", "฿" + fmt(ow.total))); body.appendChild(hd);
+    var g = el("div", "glist");
+    ow.names.forEach(function(n){
+      var b = el("button", "grow-row"), t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, n)); t.appendChild(nm);
+      t.appendChild(el("small", null, ow.by[n].n + " รายการยังไม่คืน")); b.appendChild(el("span", "icsq", n.slice(0, 1))); b.appendChild(t);
+      b.appendChild(el("div", "amt tot", "฿" + fmt(ow.by[n].amt))); b.appendChild(el("span", "chev"));
+      b.onclick = function(){ openOwe(n); }; g.appendChild(b);
+    });
+    body.appendChild(g);
+    body.appendChild(el("div", "mhint", "แตะชื่อเพื่อติ๊กว่าคืนแล้ว"));
   }
 
   // Rows grouped by day (newest first). Tap a row to edit, tap the pill to flip Pending/Paid.
@@ -657,7 +991,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         sec.appendChild(dh); lastKey = key;
       }
       var tx = el("div", "tx");
-      tx.appendChild(el("div", "ico", catIcon(r.cat)));
+      tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
       l.appendChild(el("div", "note", r.cat + (r.note ? " · " + r.note : "") + (showCard ? " · " + (r.card === state.cash ? "เงินสด" : r.card) : "")));
@@ -767,19 +1101,28 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function renderDue(body){
     var due = dueRecurring();
     if (!due.length) return;
-    var sec = el("div", "sec"), h = el("h2", null, "ถึงกำหนด ยังไม่บันทึก"); h.appendChild(el("small", null, "แตะเพื่อเพิ่ม · จากแท็บ Recurring")); sec.appendChild(h);
-    due.forEach(function(it){
-      var tx = el("div", "tx");
-      tx.appendChild(el("div", "ico", catIcon(it.c.cat)));
-      var l = el("div", "l"); l.appendChild(el("div", "n", it.c.name));
-      l.appendChild(el("div", "note", [dshort(it.date), it.c.card === state.cash ? "เงินสด" : it.c.card, it.label].filter(Boolean).join(" · ")));
-      tx.appendChild(l);
-      var rt = el("div", "rt"); rt.appendChild(el("div", "c", isFinite(it.c.cost) ? "฿" + fmt(it.c.cost) : "ใส่ยอดเอง")); tx.appendChild(rt);
-      tx.onclick = function(){ addDue(it); openSheet(); };
-      sec.appendChild(tx);
-    });
-    if (due.length > 1) { var all = el("button", "ghost", "เพิ่มทั้งหมด " + due.length + " รายการ"); all.onclick = function(){ due.forEach(addDue); openSheet(); }; sec.appendChild(all); }
-    body.appendChild(sec);
+    var known = due.filter(function(it){ return isFinite(it.c.cost); }).reduce(function(a, it){ return a + it.c.cost; }, 0);
+    var sec = el("div", "sec"), hd = el("button", "dhead");
+    var lead = el("span", "lead"); lead.innerHTML = phSvg("calendar-check"); lead.appendChild(document.createTextNode("ถึงกำหนด " + due.length + " รายการ")); hd.appendChild(lead);
+    hd.appendChild(el("small", "tot", known ? "฿" + fmt(known) : "")); hd.appendChild(el("span", "chev"));
+    var w = el("div", "disc" + (state.dueOpen ? " open" : "")); w.appendChild(hd);
+    hd.onclick = function(){ state.dueOpen = !state.dueOpen; render(); };
+    if (state.dueOpen) {
+      var lst = el("div", "duelist");
+      due.forEach(function(it){
+        var tx = el("div", "tx");
+        tx.appendChild(catIconEl(it.c.cat, "ico"));
+        var l = el("div", "l"); l.appendChild(el("div", "n", it.c.name));
+        l.appendChild(el("div", "note", [dshort(it.date), it.c.card === state.cash ? "เงินสด" : it.c.card, it.label].filter(Boolean).join(" · ")));
+        tx.appendChild(l);
+        var rt = el("div", "rt"); rt.appendChild(el("div", "c", isFinite(it.c.cost) ? "฿" + fmt(it.c.cost) : "ใส่ยอดเอง")); tx.appendChild(rt);
+        tx.onclick = function(){ addDue(it); openSheet(); };
+        lst.appendChild(tx);
+      });
+      if (due.length > 1) { var all = el("button", "more-link", "เพิ่มทั้งหมด " + due.length + " รายการ"); all.onclick = function(){ due.forEach(addDue); openSheet(); }; lst.appendChild(all); }
+      w.appendChild(lst);
+    }
+    sec.appendChild(w); body.appendChild(sec);
   }
 
   var CARD_IMG = {}; // filled from getData (server CardImages.js) after sign-in
@@ -809,8 +1152,21 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var sm = el("small"); var d = el("span", "dot"); d.style.background = color;
     sm.appendChild(d); sm.appendChild(document.createTextNode(label)); return sm;
   }
-  var CAT_ICON = { Food: "🍜", Transport: "🚇", Groceries: "🛒", Subscription: "🔁", Household: "🏠", Other: "💳" };
-  function catIcon(c){ return CAT_ICON[c] || "💳"; }
+  // Categories!B holds an icon id from the set above (e.g. fork-knife). An older emoji there still shows, as text.
+  var CAT_ICON = { Food: "fork-knife", Transport: "train", Groceries: "shopping-cart", Subscription: "repeat", Household: "house", Other: "dots-three-outline" };
+  var CAT_ICONS = ["fork-knife", "coffee", "hamburger", "cooking-pot", "wine", "shopping-cart", "basket", "shopping-bag", "train", "bus", "car", "taxi", "motorcycle", "bicycle", "gas-pump", "airplane",
+    "house", "lightning", "drop", "wifi-high", "device-mobile", "repeat", "film-slate", "popcorn", "music-notes", "game-controller", "t-shirt", "scissors", "pill", "first-aid", "tooth", "barbell",
+    "graduation-cap", "book-open", "briefcase", "bed", "gift", "heart", "baby", "dog", "paw-print", "sparkle", "wrench", "receipt", "credit-card", "money", "piggy-bank", "bank", "tag", "dots-three-outline"];
+  function catIcon(c){
+    var hit = (state.cats || []).filter(function(x){ return x.name === c; })[0];
+    return (hit && hit.icon) || CAT_ICON[c] || "tag";
+  }
+  function iconNode(name, cls){
+    var e = el("span", "phw" + (cls ? " " + cls : ""));
+    if (isIcon(name)) e.innerHTML = phSvg(name); else e.textContent = name;
+    return e;
+  }
+  function catIconEl(c, cls){ return iconNode(catIcon(c), cls); }
   function isPaid(r){ return /paid/i.test(r.status); }
   // After the cycle closes the stamp follows the bill (Bills tab), not the row statuses.
   function stampFor(cy, card, total, count){
@@ -827,8 +1183,15 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 
   // ---------- Card picker (bottom sheet) ----------
   function cardRows(card, cy){ return state.rows.filter(function(r){ return r.card === card && r.date >= cy.start && r.date <= cy.end; }); }
+  // Cards without a picture get a gradient picked from the name, so each one still looks distinct.
+  // Hues taken from the app itself (ledger green, ink, brass, oxblood, slate), never the default purple.
+  var CARD_ART = [["#0B4F45", "#16805F"], ["#1E2723", "#3D4B45"], ["#6B4E1F", "#A07A36"], ["#5B2A22", "#8E4535"], ["#1F3A52", "#3A6585"], ["#2E3B33", "#5A6D60"]];
+  function cardArt(card){
+    var h = 0; for (var i = 0; i < card.length; i++) h = (h * 31 + card.charCodeAt(i)) >>> 0;
+    var c = CARD_ART[h % CARD_ART.length]; return "linear-gradient(135deg," + c[0] + "," + c[1] + ")";
+  }
   function cardThumb(card, cls){
-    if (!CARD_IMG[card]) return el("span", cls + " ph");
+    if (!CARD_IMG[card]) { var g = el("span", cls + " gen"); g.style.background = cardArt(card); return g; }
     var im = document.createElement("img"); im.className = cls; im.src = CARD_IMG[card]; im.alt = ""; return im;
   }
   function renderCards(names){
@@ -848,6 +1211,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       b.onclick = function(){ closeCards(); state.sel = n; state.offset = 0; render(); };
       box.appendChild(b);
     });
+    var add = el("button", "addrow"); add.innerHTML = phSvg("plus"); add.appendChild(document.createTextNode("เพิ่มบัตรใหม่")); add.onclick = function(){ closeCards(); openCardEditor(null); }; box.appendChild(add);
   }
   // Bottom sheets slide up on open and slide down before they are hidden (see .overlay.slide).
   var sheetTimers = {};
@@ -857,7 +1221,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   function hideSheet(id){
     var s = $(id); if (s.hidden || s.classList.contains("closing")) return;
-    s.classList.add("closing"); document.body.style.overflow = "";
+    s.classList.add("closing");
+    if (![].some.call(document.querySelectorAll(".overlay"), function(o){ return o !== s && !o.hidden && !o.classList.contains("closing"); })) document.body.style.overflow = "";
     sheetTimers[id] = setTimeout(function(){ s.hidden = true; s.classList.remove("closing"); }, 200);
   }
   function openCards(names){ renderCards(names); showSheet("cardSheet"); }
@@ -975,21 +1340,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function openEdit(r){
     editing = r;
     editCopy = { name: r.name, cost: r.cost, date: dfmt(r.date), status: isPaid(r) ? "Paid" : (r.status || "Pending"), category: r.cat, note: r.note, card: r.card, split: r.split || "" };
-    var b = $("editBody"); b.textContent = ""; $("editMsg").textContent = "";
-    var g = el("div", "dr"), gg = el("div", "g");
-    gg.appendChild(field("List", textInput(editCopy, "name"), true));
-    gg.appendChild(field("Cost", textInput(editCopy, "cost", "decimal")));
-    gg.appendChild(field("วันที่ (dd/mm/yyyy)", textInput(editCopy, "date")));
-    var stE = selectInput(editCopy, "status", STATUSES);
-    editCopy._cardChanged = function(){ if (editCopy.card === state.cash) { editCopy.status = "Paid"; stE.value = "Paid"; } };
-    gg.appendChild(field("Status", stE));
-    gg.appendChild(field("Category", selectInput(editCopy, "category", CATS)));
-    gg.appendChild(field("Card", selectInput(editCopy, "card", cardNames()), true));
-    gg.appendChild(field("แบ่งกับ", splitField(editCopy), true));
-    gg.appendChild(field("Note", textInput(editCopy, "note"), true));
-    g.appendChild(gg); b.appendChild(g);
+    $("editMsg").textContent = ""; $("editBody").parentNode.scrollTop = 0; renderEdit();
     $("editSave").disabled = false; $("editSave").textContent = "บันทึกการแก้ไข"; resetDel();
     showSheet("editSheet");
+  }
+  function renderEdit(){
+    var b = $("editBody"), sc = b.parentNode, top = sc.scrollTop;
+    b.textContent = ""; b.appendChild(txForm(editCopy, renderEdit)); sc.scrollTop = top;
   }
   function closeEdit(){ hideSheet("editSheet"); editing = null; resetDel(); }
   // Delete = two taps (like the bill button). The server re-checks the row first (STALE) and shifts only A..H up.
@@ -1045,7 +1402,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     items.forEach(function(it){
       var r = it.r, tx = el("div", "tx");
       tx.style.cursor = "default";
-      tx.appendChild(el("div", "ico", catIcon(r.cat)));
+      tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
       l.appendChild(el("div", "note", dshort(r.date) + " " + r.date.getFullYear() + " · " + (r.card === state.cash ? "เงินสด" : r.card) + " · ทั้งบิล ฿" + fmt(r.cost)));
@@ -1060,7 +1417,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function saveEdit(){
     if (!editing || writing) return;
     var c = editCopy, d = parseDate(c.date);
-    if (!c.name || !isFinite(c.cost) || !d || !c.card) { $("editMsg").textContent = "ข้อมูลไม่ครบ (List, Cost, วันที่ หรือ Card)"; return; }
+    if (!c.name || !isFinite(c.cost) || !d || !c.card) { $("editMsg").textContent = "ยังใส่ข้อมูลไม่ครบ: ยอดเงิน ชื่อร้าน วันที่ หรือบัตร"; return; }
     var ns = normalizeSplit(c.cost, c.split); if (!ns.ok) { $("editMsg").textContent = ns.error; return; }
     var orig = { name: editing.name, cost: editing.cost, date: editing.date, row: editing.row };
     var target = editing;
@@ -1094,10 +1451,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       state.recurring = parseRecurring(res.recurring || []);
     state.cash = res.cash || state.cash;
     state.salaryDay = res.salaryDay || state.salaryDay;
-      var c = parseCards(res.cards || []); if (c) state.cards = c;
+      var c = parseCards(res.cards || []); if (c) { state.cards = c.days; state.hidden = c.hidden; }
+      state.cats = parseCats(res.categories);
       CARD_IMG = res.cardImg || CARD_IMG;
       state.bills = parseBills(res.bills || []);
       state.storedAt = res.at; showError(null); setUpdated(); fillMerchants(); render();
+      if (!$("cardMgr").hidden) renderCardMgr();
+      if (!$("catMgr").hidden) renderCatMgr();
     }).catch(function(e){
       if (!state.full) state.wantAll = false;
       if (!state.rows) { showError(e); $("updated").textContent = "โหลดไม่สำเร็จ"; }
@@ -1111,9 +1471,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   var STATUSES = ["Pending", "Paid"];
   function pad(n){ return (n < 10 ? "0" : "") + n; }
   function dfmt(d){ return pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + d.getFullYear(); }
+  function catNames(){
+    if (!state.cats || !state.cats.length) return CATS;
+    return state.cats.filter(function(x){ return !x.hidden; }).map(function(x){ return x.name; });
+  }
   function cardNames(){
-    var names = Object.keys(state.cards);
-    (state.rows || []).forEach(function(r){ if (r.card && r.card !== state.cash && names.indexOf(r.card) < 0) names.push(r.card); });
+    var names = Object.keys(state.cards).filter(function(n){ return !state.hidden[n]; });
+    (state.rows || []).forEach(function(r){ if (r.card && r.card !== state.cash && !state.cards[r.card] && names.indexOf(r.card) < 0) names.push(r.card); });
     names.push(state.cash);
     return names;
   }
@@ -1124,7 +1488,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   function rowObj(n){ return (state.rows || []).filter(function(x){ return x.row === n; })[0]; }
 
-  function openSheet(){ if (!draft.length) addBlank(); else renderDraft(); showSheet("sheet"); }
+  function openSheet(){
+    if (!draft.length) addBlank();
+    else { var k = draft.findIndex(function(r){ return !draftOk(r); }); activeDraft = k >= 0 ? k : draft.length - 1; renderDraft(); }
+    showSheet("sheet");
+  }
   function closeSheet(){ hideSheet("sheet"); }
   function splitField(r){
     var w = document.createElement("div"), i = document.createElement("input"); i.type = "text";
@@ -1138,69 +1506,180 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     i.oninput = upd; r._split = upd; w.appendChild(i); w.appendChild(pv); upd(); return w;
   }
-  function field(label, node, full){
-    var w = el("div", full ? "full" : null); w.appendChild(el("label", null, label)); w.appendChild(node); return w;
+  // One form for add and edit. The amount is the payload, so it leads; card, category and date are one-tap rails;
+  // split and note sit behind disclosures because most rows have neither.
+  function opt(label, on){ var b = el("button", "opt", label); b.type = "button"; b.setAttribute("aria-pressed", String(!!on)); return b; }
+  function flab(text, act, onAct){
+    var l = el("div", "flab"); l.appendChild(el("span", null, text));
+    if (act) { var a = el("span", "act", act); a.setAttribute("role", "button"); a.onclick = onAct; l.appendChild(a); }
+    return l;
   }
-  function textInput(r, key, mode){
-    var i = document.createElement("input"); i.type = "text"; if (mode) i.inputMode = mode;
-    i.value = r[key] == null ? "" : r[key];
-    i.oninput = function(){ r[key] = key === "cost" ? parseFloat(String(i.value).replace(/,/g, "")) : i.value; if (r._dup) r._dup(); if (r._split) r._split(); };
-    return i;
+  function centerSelected(rail){
+    requestAnimationFrame(function(){ var on = rail.querySelector('[aria-pressed="true"]'); if (on) rail.scrollLeft = on.offsetLeft - rail.clientWidth / 2 + on.offsetWidth / 2; });
   }
-  function selectInput(r, key, opts){
-    var s = document.createElement("select");
-    var list = opts.slice(); if (r[key] && list.indexOf(r[key]) < 0) list.push(r[key]); if (key === "card" && list.indexOf("") < 0) list.unshift("");
-    list.forEach(function(o){ var op = document.createElement("option"); op.value = o; op.textContent = o === state.cash ? "เงินสด" : (o || "— เลือกบัตร —"); if (o === r[key]) op.selected = true; s.appendChild(op); });
-    s.onchange = function(){ r[key] = s.value; if (r._dup) r._dup(); if (key === "card" && r._cardChanged) r._cardChanged(); };
-    return s;
+  function disc(r, key, label, val, body){
+    r._open = r._open || {};
+    var open = r._open[key] != null ? r._open[key] : !!val;
+    var w = el("div", "frow disc" + (open ? " open" : "")), h = el("button", "dhead"); h.type = "button";
+    h.appendChild(el("span", null, label)); h.appendChild(el("small", null, open ? "" : (val || "ไม่มี"))); h.appendChild(el("span", "chev"));
+    var bd = el("div", "dbody"); bd.hidden = !open; bd.appendChild(body);
+    h.onclick = function(){ r._open[key] = !open; open = !open; w.classList.toggle("open", open); bd.hidden = !open; h.querySelector("small").textContent = open ? "" : (r[key] || "ไม่มี"); if (open) { var i = bd.querySelector("input"); if (i) i.focus(); } };
+    w.appendChild(h); w.appendChild(bd); return w;
   }
+  function txForm(r, redraw){
+    var f = el("div", "txf");
+    var ab = el("label", "amt-in"); ab.appendChild(el("span", null, "฿"));
+    var ai = document.createElement("input"); ai.inputMode = "decimal"; ai.placeholder = "0.00"; ai.autocomplete = "off"; ai.setAttribute("aria-label", "จำนวนเงิน");
+    ai.value = isFinite(r.cost) ? (r.cost % 1 ? r.cost.toFixed(2) : String(r.cost)) : "";
+    ai.oninput = function(){ r.cost = parseFloat(String(ai.value).replace(/,/g, "")); upd(); };
+    ab.appendChild(ai); f.appendChild(ab);
 
+    var box = el("div", "fbox");
+    var nr = el("div", "frow"); nr.appendChild(flab("ร้าน / รายการ"));
+    var ni = el("input", "tin"); ni.setAttribute("list", "merchants"); ni.placeholder = "เช่น TMN 7-11"; ni.value = r.name || ""; ni.autocomplete = "off";
+    ni.oninput = function(){ r.name = ni.value; upd(); };
+    // Picking a known merchant fills in the category it was last logged under.
+    ni.onchange = function(){
+      var hit = (state.rows || []).filter(function(x){ return x.name === r.name; }).sort(function(a, b){ return b.row - a.row; })[0];
+      if (hit && hit.cat !== r.category) { r.category = hit.cat; redraw(); }
+    };
+    var dup = el("div", "dup"); nr.appendChild(ni); nr.appendChild(dup); box.appendChild(nr);
 
-  function renderDraft(){
-    dupAck = false;
-    var box = $("draftBox"); box.textContent = "";
-    draft.forEach(function(r, i){
-      var card = el("div", "dr");
-      var top = el("div", "top"); var dup = el("span", "dup", "");
-      var rm = el("button", "rm", "ลบ"); rm.onclick = function(){ draft.splice(i, 1); if (!draft.length) { closeSheet(); } else renderDraft(); };
-      top.appendChild(dup); top.appendChild(rm); card.appendChild(top);
-      r._dup = function(){ dup.textContent = isDup(r) ? "⚠ อาจซ้ำกับรายการที่มีอยู่แล้ว" : ""; };
-      var g = el("div", "g");
-      var nameIn = textInput(r, "name"); nameIn.setAttribute("list", "merchants"); nameIn.placeholder = "เช่น TMN 7-11";
-      var catSel = selectInput(r, "category", CATS);
-      // Picking a known merchant fills in the category it was last logged under.
-      nameIn.onchange = function(){
-        var hit = (state.rows || []).filter(function(x){ return x.name === r.name; }).sort(function(a, b){ return b.row - a.row; })[0];
-        if (hit) { r.category = hit.cat; if (![].some.call(catSel.options, function(o){ return o.value === hit.cat; })) { var op = document.createElement("option"); op.value = hit.cat; op.textContent = hit.cat; catSel.appendChild(op); } catSel.value = hit.cat; }
-        r._dup();
-      };
-      g.appendChild(field("List", nameIn, true));
-      g.appendChild(field("Cost", textInput(r, "cost", "decimal")));
-      g.appendChild(field("วันที่ (dd/mm/yyyy)", textInput(r, "date")));
-      var stSel = selectInput(r, "status", STATUSES);
-      r._cardChanged = function(){ if (r.card === state.cash) { r.status = "Paid"; stSel.value = "Paid"; } };
-      g.appendChild(field("Status", stSel));
-      g.appendChild(field("Category", catSel));
-      g.appendChild(field("Card", selectInput(r, "card", cardNames()), true));
-      g.appendChild(field("แบ่งกับ", splitField(r), true));
-      g.appendChild(field("Note", textInput(r, "note"), true));
-      card.appendChild(g); box.appendChild(card); r._dup();
+    var cr = el("div", "frow"), crail = el("div", "rail"); cr.appendChild(flab("บัตร", "จัดการบัตร", openCardMgr));
+    var cards = cardNames(); if (r.card && cards.indexOf(r.card) < 0) cards.unshift(r.card);
+    cards.forEach(function(n){
+      var b = opt(n === state.cash ? "เงินสด" : n, r.card === n);
+      if (n !== state.cash) b.insertBefore(cardThumb(n, "cthumb sm"), b.firstChild);
+      b.onclick = function(){ r.card = n; if (n === state.cash) r.status = "Paid"; redraw(); };
+      crail.appendChild(b);
     });
-    var add = el("button", "ghost", "+ เพิ่มอีกแถว"); add.onclick = addBlank; box.appendChild(add);
-    var sv = $("saveBtn"); sv.textContent = draft.length ? "บันทึก " + draft.length + " รายการลงชีท" : "บันทึก"; sv.disabled = saving || !draft.length;
+    cr.appendChild(crail); box.appendChild(cr); centerSelected(crail);
+
+    var kr = el("div", "frow"), krail = el("div", "rail"); kr.appendChild(flab("หมวด", "จัดการหมวด", openCatMgr));
+    var cats = catNames().slice(); if (r.category && cats.indexOf(r.category) < 0) cats.unshift(r.category);
+    cats.forEach(function(c){
+      var b = opt(c, r.category === c); b.insertBefore(catIconEl(c), b.firstChild);
+      b.onclick = function(){ r.category = c; redraw(); };
+      krail.appendChild(b);
+    });
+    kr.appendChild(krail); box.appendChild(kr); centerSelected(krail);
+
+    var dr = el("div", "frow"); dr.appendChild(flab("วันที่"));
+    dr.appendChild(datePicker(r, redraw)); box.appendChild(dr);
+
+    // Status is a value, not a view: the segment wears the status colour (orange Pending, green Paid) like the row pills.
+    var sr = el("div", "frow"), sg = el("div", "seg slide"); sr.appendChild(flab("สถานะ"));
+    sg.dataset.tone = String(r.status || "").toLowerCase();
+    STATUSES.forEach(function(st){
+      var b = el("button"); b.type = "button"; b.setAttribute("aria-pressed", String(r.status === st));
+      b.appendChild(el("span", "sdot " + st.toLowerCase())); b.appendChild(document.createTextNode(st));
+      b.onclick = function(){ r.status = st; redraw(); }; sg.appendChild(b);
+    });
+    slideIndicator(sg, "status");
+    sr.appendChild(sg); sr.appendChild(el("div", "h", r.card === state.cash ? "เงินสดนับเป็น Paid เสมอ" : "Paid = โยกเงินไปพักรอจ่ายแล้ว ยังไม่ใช่จ่ายบัตร")); box.appendChild(sr);
+    f.appendChild(box);
+
+    var ex = el("div", "fbox");
+    var sp = r.split ? normalizeSplit(isFinite(r.cost) ? r.cost : 0, r.split) : null;
+    ex.appendChild(disc(r, "split", "แบ่งกับคนอื่น", sp && sp.ok ? (sp.parts.length + 1) + " คน · ของเรา ฿" + fmt(sp.mine) : r.split, splitField(r)));
+    var no = document.createElement("input"); no.type = "text"; no.value = r.note || ""; no.placeholder = "เช่น ของเข้าบ้าน"; no.oninput = function(){ r.note = no.value; };
+    ex.appendChild(disc(r, "note", "โน้ต", r.note, no));
+    f.appendChild(ex);
+
+    // An edited row always "duplicates" itself, so only new drafts are checked.
+    function upd(){ dup.textContent = r !== editCopy && isDup(r) ? "⚠ อาจซ้ำกับรายการที่มีอยู่แล้ว" : ""; if (r._split) r._split(); }
+    r._dup = upd; upd();
+    return f;
+  }
+
+  // HeroUI-style date picker: a dd / mm / yyyy field with a calendar button; the calendar opens under it
+  // (Monday first, today ringed in the accent tint, the picked day filled). Quick picks sit in its footer.
+  var WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function datePicker(r, redraw){
+    var cur = parseDate(r.date), t = today(), w = el("div", "dpick");
+    r._cal = r._cal || { open: false };
+    var f = el("button", "dfield"); f.type = "button"; f.setAttribute("aria-expanded", String(r._cal.open)); f.setAttribute("aria-label", "เลือกวันที่");
+    var v = el("span", "dv");
+    if (cur) {
+      [pad(cur.getDate()), pad(cur.getMonth() + 1), String(cur.getFullYear())].forEach(function(x, i){ if (i) v.appendChild(el("i", null, "/")); v.appendChild(document.createTextNode(x)); });
+      v.appendChild(el("small", null, sameDay(cur, t) ? "วันนี้" : WD[(cur.getDay() + 6) % 7]));
+    } else v.appendChild(el("span", "ph", "dd / mm / yyyy"));
+    f.appendChild(v); var ic = el("span", "ic"); ic.innerHTML = phSvg("calendar-blank"); f.appendChild(ic);
+    f.onclick = function(){ r._cal.open = !r._cal.open; var b = cur || t; r._cal.y = b.getFullYear(); r._cal.m = b.getMonth(); redraw(); };
+    w.appendChild(f);
+    if (!r._cal.open) return w;
+
+    var y = r._cal.y, m = r._cal.m, cal = el("div", "cal");
+    var h = el("div", "cal-h"); h.appendChild(el("b", null, new Date(y, m, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" })));
+    var nav = el("div", "cal-nav");
+    [["caret-left", -1, "เดือนก่อน"], ["caret-right", 1, "เดือนถัดไป"]].forEach(function(x){
+      var b = el("button"); b.type = "button"; b.setAttribute("aria-label", x[2]); b.innerHTML = phSvg(x[0]);
+      b.onclick = function(){ var d = new Date(y, m + x[1], 1); r._cal.y = d.getFullYear(); r._cal.m = d.getMonth(); redraw(); };
+      nav.appendChild(b);
+    });
+    h.appendChild(nav); cal.appendChild(h);
+    var g = el("div", "cal-g");
+    WD.forEach(function(d){ g.appendChild(el("span", "wd", d)); });
+    var first = new Date(y, m, 1), start = new Date(y, m, 1 - (first.getDay() + 6) % 7);
+    var weeks = Math.ceil(((first.getDay() + 6) % 7 + new Date(y, m + 1, 0).getDate()) / 7);
+    for (var k = 0; k < weeks * 7; k++) (function(d){
+      var b = el("button", (d.getMonth() !== m ? "out " : "") + (sameDay(d, t) ? "today" : ""), String(d.getDate())); b.type = "button";
+      b.setAttribute("aria-pressed", String(sameDay(d, cur)));
+      b.onclick = function(){ r.date = dfmt(d); r._cal.open = false; redraw(); };
+      g.appendChild(b);
+    })(new Date(start.getFullYear(), start.getMonth(), start.getDate() + k));
+    cal.appendChild(g);
+    var ft = el("div", "cal-f");
+    [["วันนี้", t], ["เมื่อวาน", new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1)]].forEach(function(x){
+      var b = el("button", null, x[0]); b.type = "button"; b.onclick = function(){ r.date = dfmt(x[1]); r._cal.open = false; redraw(); }; ft.appendChild(b);
+    });
+    cal.appendChild(ft); w.appendChild(cal);
+    return w;
+  }
+
+  // Several drafts at once (e.g. "เพิ่มทั้งหมด" from Recurring): one is open, the rest fold into summary rows.
+  var activeDraft = 0;
+  function draftOk(r){ return r.name && isFinite(r.cost) && parseDate(r.date) && r.card; }
+  function renderDraft(keepScroll){
+    dupAck = false;
+    var box = $("draftBox"), sc = box.parentNode, top = sc.scrollTop; box.textContent = "";
+    if (activeDraft >= draft.length) activeDraft = draft.length - 1;
+    draft.forEach(function(r, i){
+      if (i === activeDraft) {
+        if (draft.length > 1) {
+          var fh = el("div", "fhead"); fh.appendChild(el("span", null, "รายการที่ " + (i + 1) + " จาก " + draft.length));
+          var rm = el("button", null, "ลบรายการนี้"); rm.onclick = function(){ draft.splice(i, 1); if (!draft.length) closeSheet(); else renderDraft(); };
+          fh.appendChild(rm); box.appendChild(fh);
+        }
+        box.appendChild(txForm(r, function(){ renderDraft(true); }));
+        return;
+      }
+      var g = el("div", "glist dsum"), b = el("button", "grow-row");
+      b.appendChild(catIconEl(r.category, "icsq"));
+      var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, r.name || "ยังไม่ใส่ชื่อ")); t.appendChild(nm);
+      var d = parseDate(r.date);
+      t.appendChild(el("small", draftOk(r) ? null : "bad", draftOk(r) ? [r.card === state.cash ? "เงินสด" : r.card, d ? dshort(d) : ""].filter(Boolean).join(" · ") : "ข้อมูลยังไม่ครบ แตะเพื่อกรอก"));
+      b.appendChild(t); b.appendChild(el("div", "amt tot", isFinite(r.cost) ? "฿" + fmt(r.cost) : "฿ ?")); b.appendChild(el("span", "chev"));
+      b.onclick = function(){ activeDraft = i; renderDraft(); };
+      g.appendChild(b); box.appendChild(g);
+    });
+    var add = el("button", "addmore"); add.innerHTML = phSvg("plus"); add.appendChild(document.createTextNode("เพิ่มอีกรายการ")); add.onclick = addBlank; box.appendChild(add);
+    var sv = $("saveBtn"); sv.textContent = draft.length > 1 ? "บันทึก " + draft.length + " รายการ" : "บันทึก"; sv.disabled = saving || !draft.length;
     $("addMsg").textContent = "";
-    var sc = box.parentNode; sc.scrollTop = sc.scrollHeight;
+    if (keepScroll) sc.scrollTop = top;
+    else { var at = box.querySelector(".fhead") || box.querySelector(".txf"); sc.scrollTop += at.getBoundingClientRect().top - sc.getBoundingClientRect().top - 4; }
   }
   function addBlank(){
     var names = cardNames();
     var card0 = (state.sel && state.sel !== "All" && state.sel !== "Salary") ? state.sel : (names[0] || "");
-draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.cash ? "Paid" : "Pending", category: "Food", note: "", split: "", card: card0 });
+    draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.cash ? "Paid" : "Pending", category: catNames().indexOf("Food") >= 0 ? "Food" : (catNames()[0] || ""), note: "", split: "", card: card0 });
+    activeDraft = draft.length - 1;
     renderDraft();
   }
   function saveDraft(){
     if (saving || !draft.length) return;
     var bad = draft.filter(function(r){ return !r.name || !isFinite(r.cost) || !parseDate(r.date) || !r.card; });
-    if (bad.length) { $("addMsg").textContent = "ยังมีแถวที่ข้อมูลไม่ครบ (List, Cost, วันที่ หรือ Card)"; return; }
+    if (bad.length) { activeDraft = draft.indexOf(bad[0]); renderDraft(); $("addMsg").textContent = "ยังใส่ข้อมูลไม่ครบ: ยอดเงิน ชื่อร้าน วันที่ หรือบัตร"; return; }
     var splitErr = null, splitTxt = draft.map(function(r){ var n = normalizeSplit(r.cost, r.split); if (!n.ok) splitErr = n.error; return n.text || ""; });
     if (splitErr) { $("addMsg").textContent = splitErr; return; }
     var dups = draft.filter(isDup).length;
@@ -1217,7 +1696,180 @@ draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.c
     }).catch(function(e){
       $("addMsg").textContent = writeErrCopy(e) + (e && e.code === "stale" ? "" : " · รีเฟรชดูก่อนกดซ้ำ (กันซ้ำ)");
       load();
-    }).then(function(){ saving = false; var b = $("saveBtn"); if (b) { b.disabled = !draft.length; if (draft.length) b.textContent = "บันทึก " + draft.length + " รายการลงชีท"; } });
+    }).then(function(){ saving = false; var b = $("saveBtn"); if (b) { b.disabled = !draft.length; if (draft.length) b.textContent = draft.length > 1 ? "บันทึก " + draft.length + " รายการ" : "บันทึก"; } });
+  }
+
+  // ---------- Manage cards (Cards tab) and categories (Categories tab) ----------
+  // Instrument register: one grouped list per sheet, every row carries real facts (this cycle's spend, last use),
+  // one primary action per sheet, and an editor sheet (itemSheet) for one item. Nothing is deleted or renamed:
+  // hiding keeps every old row valid.
+  var itemSaveFn = null, itemBusy = false, mgrTab = { cardMgr: "on", catMgr: "on" };
+  function dm(d){ return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+  function cycleLine(day){ var c = cycleFor(day, 0); return dm(c.start) + " ถึง " + dm(c.end); }
+  function daysLeft(day){ var c = cycleFor(day, 0); return Math.round((c.end - today()) / 86400000); }
+  function lastUsed(rows){ var t = 0; rows.forEach(function(r){ if (r.date > t) t = r.date; }); return t ? dm(t) : ""; }
+  function switchEl(on, onChange){
+    var b = el("button", "sw"); b.setAttribute("role", "switch"); b.setAttribute("aria-checked", String(on));
+    b.onclick = function(){ on = !on; b.setAttribute("aria-checked", String(on)); onChange(on); };
+    return b;
+  }
+  function group(title, aside){
+    var g = el("div", "fgroup");
+    if (title) { var t = el("span", "t", title); if (aside != null) { g._aside = el("small", null, aside); t.appendChild(g._aside); } g.appendChild(t); }
+    g._hint = function(txt){ var h = g.querySelector(".h") || g.appendChild(el("div", "h")); h.textContent = txt; };
+    return g;
+  }
+  // "ใช้อยู่ / ซ่อนไว้" as one segmented control instead of two stacked sections; only when something is hidden.
+  function mgrSeg(id, nOn, nOff, box){
+    if (!nOff) { mgrTab[id] = "on"; return; }
+    var sg = el("div", "seg mgr-seg");
+    [["on", "ใช้อยู่ " + nOn], ["off", "ซ่อนไว้ " + nOff]].forEach(function(o){
+      var b = el("button", null, o[1]); b.setAttribute("aria-pressed", String(mgrTab[id] === o[0]));
+      b.onclick = function(){ mgrTab[id] = o[0]; id === "cardMgr" ? renderCardMgr() : renderCatMgr(); };
+      sg.appendChild(b);
+    });
+    box.appendChild(sg);
+  }
+  function closeMgr(id){
+    hideSheet(id);
+    if (id === "itemSheet") return;
+    // Pull new cards/categories into whichever form is open underneath.
+    if (!$("sheet").hidden) renderDraft(true);
+    if (editing && editCopy) renderEdit();
+  }
+  function openItem(title, saveText, build, save){
+    $("itemTitle").textContent = title; $("itemMsg").textContent = "";
+    var b = $("itemBody"); b.textContent = ""; build(b);
+    var sv = $("itemSave"); sv.textContent = saveText; sv.disabled = false; sv._text = saveText;
+    itemSaveFn = save; showSheet("itemSheet"); $("itemBody").parentNode.scrollTop = 0;
+  }
+  function saveItem(fn, arg, done){
+    if (itemBusy) return;
+    itemBusy = true; var sv = $("itemSave"); sv.disabled = true; sv.textContent = "กำลังบันทึก…"; $("itemMsg").textContent = "";
+    gs(fn, arg).then(function(){ hideSheet("itemSheet"); showToast(done); return load(); })
+      .catch(function(e){ $("itemMsg").textContent = writeErrCopy(e); })
+      .then(function(){ itemBusy = false; sv.disabled = false; sv.textContent = sv._text; });
+  }
+
+  // Cards
+  function openCardMgr(){ renderCardMgr(); showSheet("cardMgr"); }
+  function renderCardMgr(){
+    var box = $("cardMgrBody"); box.textContent = "";
+    var names = Object.keys(state.cards), on = names.filter(function(n){ return !state.hidden[n]; }), off = names.filter(function(n){ return state.hidden[n]; });
+    mgrSeg("cardMgr", on.length, off.length, box);
+    var list = mgrTab.cardMgr === "off" ? off : on;
+    if (!list.length) { box.appendChild(el("div", "mempty", "ยังไม่มีบัตร กด เพิ่มบัตร ด้านล่างเพื่อเริ่ม")); return; }
+    var g = el("div", "glist");
+    list.forEach(function(n){
+      var day = state.cards[n], cy = cycleFor(day, 0), rows = cardRows(n, cy);
+      var total = rows.reduce(function(a, r){ return a + r.cost; }, 0);
+      var b = el("button", "grow-row");
+      b.appendChild(cardThumb(n, "cc"));
+      var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, n)); t.appendChild(nm);
+      var used = lastUsed(state.rows.filter(function(r){ return r.card === n; }));
+      t.appendChild(el("small", null, state.hidden[n] ? (used ? "ใช้ล่าสุด " + used : "ยังไม่มีรายการ") : "ตัดรอบวันที่ " + cycleFor(day, 0).end.getDate() + " · " + rows.length + " รายการ"));
+      b.appendChild(t);
+      var a = el("div", "amt tot", "฿" + fmt(total)); a.appendChild(el("small", null, state.hidden[n] ? "รอบนี้" : "อีก " + daysLeft(day) + " วัน"));
+      b.appendChild(a); b.appendChild(el("span", "chev"));
+      b.onclick = function(){ openCardEditor(n); };
+      g.appendChild(b);
+    });
+    box.appendChild(g);
+    if (mgrTab.cardMgr === "off") box.appendChild(el("div", "mhint", "บัตรที่ซ่อนไม่อยู่ในตัวเลือกตอนเพิ่มรายการ แต่ยอดและรายการเก่ายังนับครบ"));
+  }
+  function openCardEditor(name){
+    var isNew = !name, f = { name: name || "", day: isNew ? 28 : state.cards[name], hidden: !isNew && !!state.hidden[name] };
+    openItem(isNew ? "เพิ่มบัตร" : name, isNew ? "เพิ่มบัตร" : "บันทึก", function(b){
+      var pv = CARD_IMG[f.name] ? cardThumb(f.name, "ccbig") : el("div", "ccbig gen"), nm = el("div", "nm", f.name);
+      if (!CARD_IMG[f.name]) { pv.style.background = cardArt(f.name || "?"); pv.appendChild(nm); }
+      b.appendChild(pv);
+      if (!isNew) {
+        // Facts first: what this card holds right now, so the edit is made with the numbers in view.
+        var cy = cycleFor(f.day, 0), rows = cardRows(name, cy), all = state.rows.filter(function(r){ return r.card === name; });
+        var fx = el("div", "facts");
+        [["รอบนี้", "฿" + fmt(rows.reduce(function(a, r){ return a + r.cost; }, 0))], ["รายการรอบนี้", String(rows.length)], ["ใช้ล่าสุด", lastUsed(all) || "ไม่มี"]].forEach(function(x){
+          var d = el("div"); d.appendChild(el("small", null, x[0])); d.appendChild(el("b", x[0] === "รอบนี้" ? "tot" : null, x[1])); fx.appendChild(d);
+        });
+        b.appendChild(fx);
+      } else {
+        var g1 = group("ชื่อบัตร");
+        var inp = el("input", "txt"); inp.placeholder = "ธนาคาร + เลข 4 ตัวท้าย เช่น KBank-1234"; inp.maxLength = 40; inp.autocomplete = "off";
+        inp.oninput = function(){ f.name = inp.value.trim(); nm.textContent = f.name; pv.style.background = cardArt(f.name || "?"); };
+        g1.appendChild(inp); g1._hint("ใช้ชื่อนี้ในชีท เปลี่ยนทีหลังไม่ได้"); b.appendChild(g1);
+        setTimeout(function(){ inp.focus(); }, 350);
+      }
+      var g2 = group("วันเริ่มรอบ", "รอบนี้ " + cycleLine(f.day)), days = el("div", "days");
+      for (var d = 1; d <= 28; d++) (function(d){
+        var x = el("button", null, String(d)); x.setAttribute("aria-pressed", String(d === f.day));
+        x.onclick = function(){ f.day = d; [].forEach.call(days.children, function(y){ y.setAttribute("aria-pressed", String(y === x)); }); g2._aside.textContent = "รอบนี้ " + cycleLine(d); };
+        days.appendChild(x);
+      })(d);
+      g2.appendChild(days); g2._hint("วันถัดจากวันตัดรอบในใบแจ้งยอด"); b.appendChild(g2);
+      if (!isNew) {
+        var g3 = group(), sr = el("div", "swrow"), st = el("div", "txt");
+        st.appendChild(el("b", null, "แสดงในตัวเลือก")); st.appendChild(el("small", null, "ปิดเมื่อเลิกใช้บัตร ยอดและรายการเก่ายังนับครบ"));
+        sr.appendChild(st); sr.appendChild(switchEl(!f.hidden, function(v){ f.hidden = !v; })); g3.appendChild(sr); b.appendChild(g3);
+      }
+    }, function(){
+      if (isNew && !f.name) { $("itemMsg").textContent = "ใส่ชื่อบัตรก่อน"; return; }
+      saveItem("saveCard", { name: f.name, day: f.day, hidden: f.hidden, isNew: isNew }, isNew ? "เพิ่มบัตร " + f.name + " แล้ว" : "บันทึก " + f.name + " แล้ว");
+    });
+  }
+
+  // Categories
+  function catRows(name){ var since = new Date(today() - 29 * 86400000); return state.rows.filter(function(r){ return r.cat === name && r.date >= since; }); }
+  function openCatMgr(){ renderCatMgr(); showSheet("catMgr"); }
+  function renderCatMgr(){
+    var box = $("catMgrBody"); box.textContent = "";
+    $("catMgrAdd").hidden = !state.cats;
+    if (!state.cats) { box.appendChild(el("div", "mempty", "ยังไม่มีแท็บ Categories ในชีท (A=Category, B=Icon, C=Hidden) ตอนนี้ใช้หมวดตั้งต้นของแอป")); return; }
+    var on = state.cats.filter(function(c){ return !c.hidden; }), off = state.cats.filter(function(c){ return c.hidden; });
+    mgrSeg("catMgr", on.length, off.length, box);
+    var list = mgrTab.catMgr === "off" ? off : on;
+    if (!list.length) { box.appendChild(el("div", "mempty", "ยังไม่มีหมวด กด เพิ่มหมวด ด้านล่างเพื่อเริ่ม")); return; }
+    var g = el("div", "glist cats");
+    list.forEach(function(c){
+      var rows = catRows(c.name), total = rows.reduce(function(a, r){ return a + r.cost; }, 0);
+      var b = el("button", "grow-row");
+      b.appendChild(catIconEl(c.name, "icsq"));
+      var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, c.name)); t.appendChild(nm);
+      t.appendChild(el("small", null, rows.length ? "30 วันล่าสุด " + rows.length + " รายการ" : "30 วันล่าสุดยังไม่มีรายการ")); b.appendChild(t);
+      b.appendChild(el("div", "amt tot" + (total ? "" : " zero"), "฿" + fmt(total))); b.appendChild(el("span", "chev"));
+      b.onclick = function(){ openCatEditor(c); };
+      g.appendChild(b);
+    });
+    box.appendChild(g);
+    if (mgrTab.catMgr === "off") box.appendChild(el("div", "mhint", "หมวดที่ซ่อนไม่อยู่ในตัวเลือก รายการเก่ายังนับในหมวดเดิม"));
+  }
+  function openCatEditor(c){
+    var isNew = !c, f = { name: c ? c.name : "", icon: c ? catIcon(c.name) : "tag", hidden: !!(c && c.hidden) };
+    openItem(isNew ? "เพิ่มหมวด" : c.name, isNew ? "เพิ่มหมวด" : "บันทึก", function(b){
+      // Preview = the row exactly as the list shows it, with this category's real numbers.
+      var rows = isNew ? [] : catRows(f.name), total = rows.reduce(function(a, r){ return a + r.cost; }, 0);
+      var pv = el("div", "catprev"), ic = iconNode(f.icon, "icsq"), t = el("div", "txt"), pn = el("b", null, f.name || "ชื่อหมวด");
+      t.appendChild(pn); t.appendChild(el("small", null, isNew ? "หมวดใหม่ยังไม่มีรายการ" : "30 วันล่าสุด " + rows.length + " รายการ"));
+      pv.appendChild(ic); pv.appendChild(t); pv.appendChild(el("div", "amt tot", "฿" + fmt(total))); b.appendChild(pv);
+      if (isNew) {
+        var g1 = group("ชื่อหมวด");
+        var inp = el("input", "txt"); inp.placeholder = "เช่น Pets"; inp.maxLength = 40; inp.autocomplete = "off";
+        inp.oninput = function(){ f.name = inp.value.trim(); pn.textContent = f.name || "ชื่อหมวด"; };
+        g1.appendChild(inp); g1._hint("ใช้ชื่อนี้ในชีท เปลี่ยนทีหลังไม่ได้"); b.appendChild(g1);
+        setTimeout(function(){ inp.focus(); }, 350);
+      }
+      var g2 = group("ไอคอน"), grid = el("div", "iconpick");
+      function pick(n){ f.icon = n; ic.innerHTML = phSvg(n); [].forEach.call(grid.children, function(y){ y.setAttribute("aria-pressed", String(y.dataset.n === n)); }); }
+      CAT_ICONS.forEach(function(n){ var x = el("button"); x.type = "button"; x.dataset.n = n; x.setAttribute("aria-label", n); x.innerHTML = phSvg(n); x.onclick = function(){ pick(n); }; grid.appendChild(x); });
+      g2.appendChild(grid); b.appendChild(g2);
+      if (isIcon(f.icon)) pick(f.icon); else g2._hint("ตอนนี้เป็นอีโมจิ เลือกไอคอนด้านบนเพื่อเปลี่ยน");
+      if (!isNew) {
+        var g3 = group(), sr = el("div", "swrow"), st = el("div", "txt");
+        st.appendChild(el("b", null, "แสดงในตัวเลือก")); st.appendChild(el("small", null, "ปิดเมื่อไม่ใช้หมวดนี้ รายการเก่ายังนับในหมวดเดิม"));
+        sr.appendChild(st); sr.appendChild(switchEl(!f.hidden, function(v){ f.hidden = !v; })); g3.appendChild(sr); b.appendChild(g3);
+      }
+    }, function(){
+      if (isNew && !f.name) { $("itemMsg").textContent = "ใส่ชื่อหมวดก่อน"; return; }
+      saveItem("saveCategory", { name: f.name, icon: f.icon, hidden: f.hidden, isNew: isNew }, isNew ? "เพิ่มหมวด " + f.name + " แล้ว" : "บันทึก " + f.name + " แล้ว");
+    });
   }
 
   $("prev").onclick = function(){ state.offset -= 1; render(); };
@@ -1228,12 +1880,17 @@ draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.c
   $("editDel").onclick = deleteEdit;
   $("closeOwe").onclick = closeOwe;
   $("closeCards").onclick = closeCards;
+  $("cardMgrBtn").onclick = function(){ closeCards(); openCardMgr(); };
+  ["cardMgr", "catMgr", "itemSheet"].forEach(function(id){
+    $("close-" + id).onclick = function(){ closeMgr(id); };
+    $(id).onclick = function(e){ if (e.target === this) closeMgr(id); };
+  });
+  $("itemSave").onclick = function(){ if (itemSaveFn) itemSaveFn(); };
+  $("cardMgrAdd").onclick = function(){ openCardEditor(null); };
+  $("catMgrAdd").onclick = function(){ openCatEditor(null); };
   $("cardSheet").onclick = function(e){ if (e.target === this) closeCards(); };
   $("q").oninput = function(){ state.q = this.value.trim(); render(); };
-  $("searchBtn").onclick = function(){
-    if (state.searchOpen || state.q) { state.searchOpen = false; state.q = ""; $("q").value = ""; render(); return; }
-    state.searchOpen = true; render(); $("q").focus();
-  };
+  [].forEach.call(document.querySelectorAll(".tabbar button"), function(b){ b.onclick = function(){ if (state.rows) goTab(b.dataset.tab); }; });
 
   // ---------- Swipe the hero to change card ----------
   // The hero follows the finger; past the threshold it slides out, the next card renders, and the new hero slides in
