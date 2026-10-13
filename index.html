@@ -218,6 +218,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .tx .l{flex:1;min-width:0}
 .tx .n{font-size:14px;font-weight:500;overflow-wrap:anywhere;line-height:1.35}
 .tx .note{font-size:12px;color:var(--muted);margin-top:1px;overflow-wrap:anywhere}
+/* card chip: hue/saturation per card (set inline as --h/--s), lightness per theme so it always reads */
+:root{--chip-l:38%;--chip-a:.12}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--chip-l:72%;--chip-a:.16}}
+:root[data-theme="dark"]{--chip-l:72%;--chip-a:.16}
+.cchip{display:inline-block;padding:0 7px;border-radius:99px;font-size:11px;font-weight:500;line-height:1.6;white-space:nowrap;vertical-align:1px;color:hsl(var(--h,0) var(--s,0%) var(--chip-l));background:hsl(var(--h,0) var(--s,0%) var(--chip-l) / var(--chip-a))}
 .tx .rt{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .tx .c{font-size:14.5px;font-weight:600;white-space:nowrap}
 .pill{font-size:10.5px;font-weight:500;padding:2px 9px;border-radius:99px}
@@ -1048,7 +1053,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
-      l.appendChild(el("div", "note", r.cat + (r.note ? " · " + r.note : "") + (showCard ? " · " + (r.card === state.cash ? "เงินสด" : r.card) : "")));
+      l.appendChild(metaLine("div", "note", [r.cat, r.note, showCard && r.card ? cardChip(r.card) : ""]));
       var op = others(r.parts);
       if (op.length) {
         var sumP = op.reduce(function(a, p){ return a + (p.amt || 0); }, 0);
@@ -1167,7 +1172,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         var tx = el("div", "tx");
         tx.appendChild(catIconEl(it.c.cat, "ico"));
         var l = el("div", "l"); l.appendChild(el("div", "n", it.c.name));
-        l.appendChild(el("div", "note", [dshort(it.date), it.c.card === state.cash ? "เงินสด" : it.c.card, it.label].filter(Boolean).join(" · ")));
+        l.appendChild(metaLine("div", "note", [dshort(it.date), it.c.card ? cardChip(it.c.card) : "", it.label]));
         tx.appendChild(l);
         var rt = el("div", "rt"); rt.appendChild(el("div", "c", isFinite(it.c.cost) ? "฿" + fmt(it.c.cost) : "ใส่ยอดเอง")); tx.appendChild(rt);
         tx.onclick = function(){ addDue(it); openSheet(); };
@@ -1240,9 +1245,63 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   // Cards without a picture get a gradient picked from the name, so each one still looks distinct.
   // Hues taken from the app itself (ledger green, ink, brass, oxblood, slate), never the default purple.
   var CARD_ART = [["#0B4F45", "#16805F"], ["#1E2723", "#3D4B45"], ["#6B4E1F", "#A07A36"], ["#5B2A22", "#8E4535"], ["#1F3A52", "#3A6585"], ["#2E3B33", "#5A6D60"]];
-  function cardArt(card){
+  function cardArtPair(card){
     var h = 0; for (var i = 0; i < card.length; i++) h = (h * 31 + card.charCodeAt(i)) >>> 0;
-    var c = CARD_ART[h % CARD_ART.length]; return "linear-gradient(135deg," + c[0] + "," + c[1] + ")";
+    return CARD_ART[h % CARD_ART.length];
+  }
+  function cardArt(card){ var c = cardArtPair(card); return "linear-gradient(135deg," + c[0] + "," + c[1] + ")"; }
+
+  // Chip colour per card: the most common vivid hue on its picture (black/silver cards fall back to their
+  // average, i.e. grey), or the generated gradient's colour for cards without one. Lightness comes from --chip-l.
+  var CARD_HS = {}, cardHsSrc = {};
+  function rgbHs(r, g, b){
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    if (!d) return { h: 0, s: 0 };
+    var h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: Math.round(h * 60), s: Math.round(d / (1 - Math.abs(2 * l - 1)) * 100) };
+  }
+  function cardHs(card){
+    if (card === state.cash) return { h: 0, s: 0 };
+    if (CARD_HS[card]) return CARD_HS[card];
+    if (CARD_IMG[card]) return { h: 0, s: 0 }; // picture still being read; learnCardColours repaints
+    var n = parseInt(cardArtPair(card)[1].slice(1), 16);
+    return rgbHs((n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255);
+  }
+  function learnCardColours(){
+    Object.keys(CARD_IMG).forEach(function(card){
+      var src = CARD_IMG[card]; if (cardHsSrc[card] === src) return; cardHsSrc[card] = src;
+      var im = new Image();
+      im.onload = function(){
+        var w = 48, h = 30, cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        var cx = cv.getContext("2d"); cx.drawImage(im, 0, 0, w, h);
+        var px = cx.getImageData(0, 0, w, h).data, bins = {}, all = [0, 0, 0, 0];
+        for (var i = 0; i < px.length; i += 4) {
+          if (px[i + 3] < 128) continue;
+          var r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+          all[0] += r; all[1] += g; all[2] += b; all[3]++;
+          var hs = rgbHs(r, g, b); if (hs.s < 35 || l < .15 || l > .85) continue;
+          var k = Math.round(hs.h / 15) % 24, e = bins[k] || (bins[k] = [0, 0, 0, 0]), wt = hs.s / 100;
+          e[0] += r * wt; e[1] += g * wt; e[2] += b * wt; e[3] += wt;
+        }
+        var best = null; for (var k2 in bins) if (!best || bins[k2][3] > best[3]) best = bins[k2];
+        var v = best && best[3] > 3 ? best : all; if (!v[3]) return;
+        CARD_HS[card] = rgbHs(v[0] / v[3], v[1] / v[3], v[2] / v[3]);
+        document.querySelectorAll(".cchip").forEach(function(c){ if (c.dataset.card === card) tintChip(c, card); });
+      };
+      im.src = src;
+    });
+  }
+  function tintChip(e, card){ var hs = cardHs(card); e.style.setProperty("--h", hs.h); e.style.setProperty("--s", Math.min(hs.s, 70) + "%"); }
+  function cardChip(card){ var e = el("span", "cchip", card === state.cash ? "เงินสด" : card); e.dataset.card = card; tintChip(e, card); return e; }
+  // Text parts joined with " · "; a card chip is set off by a plain space instead.
+  function metaLine(tag, cls, parts){
+    var e = el(tag, cls), prev = null;
+    parts.forEach(function(p){
+      if (!p) return;
+      if (prev) e.appendChild(document.createTextNode(typeof p === "string" && typeof prev === "string" ? " · " : " "));
+      e.appendChild(typeof p === "string" ? document.createTextNode(p) : p); prev = p;
+    });
+    return e;
   }
   function cardThumb(card, cls){
     if (!CARD_IMG[card]) { var g = el("span", cls + " gen"); g.style.background = cardArt(card); return g; }
@@ -1461,7 +1520,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
-      l.appendChild(el("div", "note", dshort(r.date) + " " + r.date.getFullYear() + " · " + (r.card === state.cash ? "เงินสด" : r.card) + (isMeSheet && !it.split ? "" : " · ทั้งบิล ฿" + fmt(r.cost))));
+      l.appendChild(metaLine("div", "note", [dshort(r.date) + " " + r.date.getFullYear(), r.card ? cardChip(r.card) : "", isMeSheet && !it.split ? "" : "ทั้งบิล ฿" + fmt(r.cost)]));
       tx.appendChild(l);
       var rt = el("div", "rt"), done = isMeSheet ? it.done : it.p.done, amt = isMeSheet ? it.amt : it.p.amt;
       var pb = el("button", "part" + (done ? " done" : ""), "฿" + fmtAmt(amt) + (done ? " ✓" : ""));
@@ -1510,7 +1569,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     state.salaryDay = res.salaryDay || state.salaryDay;
       var c = parseCards(res.cards || []); if (c) { state.cards = c.days; state.hidden = c.hidden; }
       state.cats = parseCats(res.categories);
-      CARD_IMG = res.cardImg || CARD_IMG;
+      CARD_IMG = res.cardImg || CARD_IMG; learnCardColours();
       state.bills = parseBills(res.bills || []);
       state.storedAt = res.at; showError(null); setUpdated(); fillMerchants(); render();
       if (!$("cardMgr").hidden) renderCardMgr();
@@ -1715,7 +1774,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       b.appendChild(catIconEl(r.category, "icsq"));
       var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, r.name || "ยังไม่ใส่ชื่อ")); t.appendChild(nm);
       var d = parseDate(r.date);
-      t.appendChild(el("small", draftOk(r) ? null : "bad", draftOk(r) ? [r.card === state.cash ? "เงินสด" : r.card, d ? dshort(d) : ""].filter(Boolean).join(" · ") : "ข้อมูลยังไม่ครบ แตะเพื่อกรอก"));
+      t.appendChild(draftOk(r) ? metaLine("small", null, [r.card ? cardChip(r.card) : "", d ? dshort(d) : ""]) : el("small", "bad", "ข้อมูลยังไม่ครบ แตะเพื่อกรอก"));
       b.appendChild(t); b.appendChild(el("div", "amt tot", isFinite(r.cost) ? "฿" + fmt(r.cost) : "฿ ?")); b.appendChild(el("span", "chev"));
       b.onclick = function(){ activeDraft = i; renderDraft(); };
       g.appendChild(b); box.appendChild(g);
