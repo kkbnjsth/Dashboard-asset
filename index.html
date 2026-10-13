@@ -23,24 +23,24 @@
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
-  --bg:#f5f6f7;--surface:#ffffff;--text:#14171a;--muted:#8a9099;--line:#edeff1;
+  --bg:#f4f6f8;--surface:#ffffff;--text:#0f172a;--muted:#6b7684;--line:#e6eaef;
   --accent:#12a150;--on-accent:#ffffff;
   --paid:#12a150;--paid-soft:#e6f6ec;--pending:#e58a00;--pending-soft:#fff3de;--bar:#12a150;
-  --shadow:0 1px 2px rgba(20,23,26,.04),0 4px 16px rgba(20,23,26,.04);
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.05);
   --font:"Poppins","IBM Plex Sans Thai",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#0e1110;--surface:#181c1a;--text:#f2f5f3;--muted:#8c958f;--line:#252a27;
-    --accent:#2bc470;--on-accent:#07140d;
-    --paid:#2bc470;--paid-soft:#14301f;--pending:#f2a93b;--pending-soft:#33260f;--bar:#2bc470;
+    --bg:#061316;--surface:#0d2024;--text:#ecfbf6;--muted:#82a09f;--line:#183135;
+    --accent:#3ed68b;--on-accent:#04140c;
+    --paid:#3ed68b;--paid-soft:#103427;--pending:#f2a93b;--pending-soft:#33260f;--bar:#3ed68b;
     --shadow:none;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0e1110;--surface:#181c1a;--text:#f2f5f3;--muted:#8c958f;--line:#252a27;
-  --accent:#2bc470;--on-accent:#07140d;
-  --paid:#2bc470;--paid-soft:#14301f;--pending:#f2a93b;--pending-soft:#33260f;--bar:#2bc470;
+  --bg:#061316;--surface:#0d2024;--text:#ecfbf6;--muted:#82a09f;--line:#183135;
+  --accent:#3ed68b;--on-accent:#04140c;
+  --paid:#3ed68b;--paid-soft:#103427;--pending:#f2a93b;--pending-soft:#33260f;--bar:#3ed68b;
   --shadow:none;
 }
 *{box-sizing:border-box}
@@ -84,8 +84,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 /* Manage sheets (instrument register): one grouped list, facts on every row, one primary action per sheet. */
 :root{--r-control:12px;--r-media:14px;--r-sheet:20px;--line-mid:rgba(20,40,30,.16);
   --lift-1:0 0 0 1px rgba(20,40,30,.06),0 1px 2px rgba(20,40,30,.04);--lh-thai:1.65}
-:root[data-theme="dark"]{--line-mid:rgba(220,240,230,.16);--lift-1:0 0 0 1px rgba(220,240,230,.07)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--line-mid:rgba(220,240,230,.16);--lift-1:0 0 0 1px rgba(220,240,230,.07)}}
+:root[data-theme="dark"]{--line-mid:rgba(200,255,240,.16);--lift-1:0 0 0 1px rgba(220,240,230,.07)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--line-mid:rgba(200,255,240,.16);--lift-1:0 0 0 1px rgba(220,240,230,.07)}}
 .glist{background:var(--surface);border-radius:var(--r-sheet);box-shadow:var(--lift-1);overflow:hidden}
 .grow-row{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 14px;text-align:left;position:relative}
 .grow-row+.grow-row::before{content:"";position:absolute;top:0;left:84px;right:0;height:1px;background:var(--line)}
@@ -397,9 +397,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .dhead .lead{display:flex;align-items:center;gap:8px}
 .dhead .lead .phi{width:18px;height:18px;color:var(--muted)}
 /* ---- Top view switcher: HeroUI v3 Tabs (grey track, sliding raised segment, hairline separators) ---- */
-:root{--track:#ebecee;--segment:#fff;--segment-shadow:0 2px 4px 0 rgba(0,0,0,.04),0 1px 2px 0 rgba(0,0,0,.06),0 0 1px 0 rgba(0,0,0,.06)}
-:root[data-theme="dark"]{--track:#202422;--segment:#353b38;--segment-shadow:none}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--track:#202422;--segment:#353b38;--segment-shadow:none}}
+:root{--track:#e9edf1;--segment:#fff;--segment-shadow:0 2px 4px 0 rgba(0,0,0,.04),0 1px 2px 0 rgba(0,0,0,.06),0 0 1px 0 rgba(0,0,0,.06)}
+:root[data-theme="dark"]{--track:#11292c;--segment:#214041;--segment-shadow:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--track:#11292c;--segment:#214041;--segment-shadow:none}}
 #seg[hidden]{display:none}
 #seg{position:relative;display:flex;flex-wrap:nowrap;gap:0;padding:4px;margin-bottom:12px;background:var(--track);border-radius:20px}
 #seg .chip{position:relative;z-index:1;flex:1 1 0;min-width:0;justify-content:center;text-align:center;height:36px;padding:0 6px;border-radius:999px;background:transparent;box-shadow:none;color:var(--muted);font-size:14px;font-weight:500;transition:color .15s ease;-webkit-tap-highlight-color:transparent}
