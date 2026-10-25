@@ -487,6 +487,12 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .blabel small{font-size:12px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
 .cat.btn{display:block;width:100%;padding:0;text-align:left;color:inherit}
 .cat .dl.over{color:var(--pending)}
+.flow .lnow{display:block}
+.lnow b{font-weight:600;color:var(--text)}
+.fsec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:14px 16px 4px;font-size:12.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.fsec-h span:first-child{display:flex;align-items:center;gap:4px;color:var(--text)}
+.envsec{padding:0 16px 2px;border-bottom:1px solid var(--line);margin-bottom:2px}
+.envsec .fsec-h{padding:14px 0 0}
 .unbud{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding-top:10px;border-top:1px solid var(--line);margin-top:4px;font-variant-numeric:tabular-nums}
 .bud-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;font-size:13.5px;font-weight:600;color:var(--accent)}
 .bud-add .phi{width:17px;height:17px}
@@ -1244,6 +1250,12 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var pending = inc.concat(fix).filter(function(b){ return b.variable && !cycAmt(b, sy).real; });
     var incEst = inc.some(function(b){ return b.variable && !cycAmt(b, sy).real; });
     var cs0 = cycleSpend(sy), spent = cs0.spent, byCat = cs0.byCat;
+    // Category caps are envelopes: money set aside up front, like Fixed. What is left after income − Fixed − carry −
+    // envelopes is the leftover account; overspending an envelope, or spending in a category without one, eats into it.
+    var capT = budSum(caps), capUsed = 0, capOver = 0, capped = {};
+    caps.forEach(function(c){ var u = byCat[c.name] || 0; capped[c.name] = true; capUsed += u; capOver += Math.max(0, u - c.amt); });
+    var rest = Object.keys(byCat).filter(function(k){ return !capped[k]; }), restT = rest.reduce(function(a, k){ return a + byCat[k]; }, 0);
+    var leftPlan = avail - capT, leftNow = leftPlan - capOver - restT;
 
     if (pending.length && state.offset <= 0) renderConfirm(body, pending, sy);
 
@@ -1268,14 +1280,23 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var lines = [["inc", "รายรับ", "฿" + fmt(incT)], ["fix", "หัก ค่าใช้จ่ายคงที่", "−฿" + fmt(fixT)]];
       var showCarry = carry > 0.004 || ci.manual;
       if (showCarry) lines.push(["carry", "หัก ยกยอดจากรอบก่อน", "−฿" + fmt(carry)]);
-      lines.push(["eq", "งบใช้จ่าย", "฿" + fmt(avail)]);
+      if (caps.length) lines.push(["caps", "หัก งบที่กันไว้", "−฿" + fmt(capT)]);
+      lines.push(["eq", caps.length ? "เงินเหลือ" : "งบใช้จ่าย", "฿" + fmt(caps.length ? leftPlan : avail)]);
       lines.forEach(function(x){
         var d = el(x[0] === "carry" ? "button" : "div", x[0] === "eq" ? "eq" : x[0] === "carry" ? "cline" : null), lb0 = el("span", x[0] === "eq" ? null : "lead", x[1]);
         if (x[0] === "inc") { lb0.appendChild(incEye()); if (incEst) lb0.appendChild(el("small", "est", "ประมาณการ")); }
         if (x[0] === "fix" && fix.some(function(b){ return b.variable && !cycAmt(b, sy).real; })) lb0.appendChild(el("small", "est", "ประมาณการ"));
+        if (x[0] === "caps") lb0.appendChild(el("small", "est", caps.length + " ซอง"));
         if (x[0] === "carry") { if (ci.manual) lb0.appendChild(el("small", "est", "แก้เอง")); d.type = "button"; d.onclick = function(){ openCarryEditor(sy, ci); }; }
         d.appendChild(lb0); d.appendChild(el("span", x[0] === "inc" || x[0] === "eq" ? "tot inc" : "tot", x[2])); fl.appendChild(d);
       });
+      if (caps.length && capOver + restT > 0.004) {
+        // The leftover account as it stands now, not as planned.
+        var ln = el("div", "mhint lnow"), lv = el("b", "tot inc", "฿" + fmt(leftNow));
+        ln.appendChild(document.createTextNode("เงินเหลือตอนนี้ ")); ln.appendChild(lv);
+        ln.appendChild(document.createTextNode(" (หัก" + (capOver > 0.004 ? " ใช้เกินซอง ฿" + fmt(capOver) : "") + (capOver > 0.004 && restT > 0.004 ? " ·" : "") + (restT > 0.004 ? " หมวดที่ไม่ได้ตั้งงบ ฿" + fmt(restT) : "") + ")"));
+        fl.appendChild(ln);
+      }
       if (ci.manual) fl.appendChild(el("div", "mhint", "ใส่ยอดยกมาเอง (แอปคำนวณได้ ฿" + fmt(ci.computed) + ") · แตะบรรทัดยกยอดเพื่อแก้"));
       else if (carry > 0.004) fl.appendChild(el("div", "mhint", "รอบก่อนใช้เกินงบ เงินเดือนรอบนี้ต้องกันไปโปะส่วนนั้นก่อน (นับย้อนไม่เกิน " + CARRY_CYCLES + " รอบ เฉพาะยอดที่เกิน) · แตะเพื่อแก้ถ้าไม่ตรงกับหนี้ที่ต้องโปะจริง"));
       if (!showCarry && state.offset <= 0) {
@@ -1286,15 +1307,16 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     body.appendChild(top);
 
-    if (inc.length) renderCashflow(body, fix, byCat, incT, sy, carry);
+    if (inc.length) renderCashflow(body, fix, caps, byCat, incT, sy, carry);
 
-    // Category caps; spending in categories without a cap is summed on one line.
-    var cs = el("div", "sec"), ch = el("h2", null, "งบตามหมวด"), capT = budSum(caps);
-    if (inc.length && caps.length) ch.appendChild(el("small", "tot inc", "ยังไม่ได้แบ่ง ฿" + fmt(avail - capT)));
-    cs.appendChild(ch);
-    var capped = {};
+    budList(body, "Income", "money", incT, sy);
+    // Envelopes (category caps) open the Fixed card as its first section: the user counts them as fixed costs that
+    // are spent bit by bit. Spending in categories without one is summed on one line and comes out of leftover.
+    var cs = el("div", "envsec"), eh = el("div", "fsec-h"), ehl = el("span", null, "งบกินใช้");
+    ehl.appendChild(el("small", "est", "แบบซอง")); eh.appendChild(ehl);
+    if (caps.length) eh.appendChild(el("span", "tot", "ใช้ไป ฿" + fmt(capUsed) + " / ฿" + fmt(capT)));
+    cs.appendChild(eh);
     caps.forEach(function(c){
-      capped[c.name] = true;
       var used = byCat[c.name] || 0, ov = used > c.amt + 0.004;
       var w = el("button", "cat btn"), row = el("div", "row");
       var cl = el("span"); cl.appendChild(catIconEl(c.name)); cl.appendChild(document.createTextNode(c.name));
@@ -1309,23 +1331,23 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       cs.appendChild(w);
     });
     if (!caps.length) cs.appendChild(el("div", "mhint", "ยังไม่ได้ตั้งงบหมวดไหน"));
-    var rest = Object.keys(byCat).filter(function(k){ return !capped[k]; }), restT = rest.reduce(function(a, k){ return a + byCat[k]; }, 0);
-    if (rest.length) { var u = el("div", "unbud"); u.appendChild(el("span", null, "หมวดที่ไม่ได้ตั้งงบ (" + rest.join(", ") + ")")); u.appendChild(el("span", "tot", "฿" + fmt(restT))); cs.appendChild(u); }
+    if (rest.length) { var u = el("div", "unbud"); u.appendChild(el("span", null, "หมวดที่ไม่ได้ตั้งงบ (" + rest.join(", ") + ") · หักจากเงินเหลือ")); u.appendChild(el("span", "tot", "฿" + fmt(restT))); cs.appendChild(u); }
     var ab = el("button", "bud-add"); ab.innerHTML = phSvg("plus"); ab.appendChild(document.createTextNode("ตั้งงบหมวด"));
     ab.onclick = function(){ openBudgetEditor("Category", null); }; cs.appendChild(ab);
-    body.appendChild(cs);
+    budList(body, "Fixed", "receipt", fixT, sy, { node: cs, total: fixT + capT });
 
-    budList(body, "Income", "money", incT, sy);
-    budList(body, "Fixed", "receipt", fixT, sy);
     body.appendChild(el("div", "mhint", "รายการใน Data ที่ชื่อตรงกับค่าใช้จ่ายคงที่ หรือมีคำค้นที่ตั้งไว้ (เช่น Netflix ที่ตัดบัตร) ไม่นับซ้ำในยอดใช้ไป · รายการที่หารกับคนอื่นนับเฉพาะส่วนของเรา"));
   }
-  // Cashflow split of this cycle's income: each group = its Fixed items + what was spent in its categories.
+  // Cashflow split of this cycle's income: each group = its Fixed items + its envelopes at the planned amount (more if
+  // overspent, since an envelope is set aside whether or not it is used yet) + what was spent in its other categories.
   // Overspend carried in from earlier cycles also comes out of this income; it stays in its own grey line because
   // it was already counted in its groups back in the cycle it was spent.
-  function renderCashflow(body, fix, byCat, incT, sy, carry){
-    var t = { Life: 0, Soul: 0, Future: 0 }, none = 0;
-    fix.forEach(function(b){ var a = cycAmt(b, sy).amt; if (b.group) t[b.group] += a; else none += a; });
-    Object.keys(byCat).forEach(function(k){ var g = catGroup(k); if (g) t[g] += byCat[k]; else none += byCat[k]; });
+  function renderCashflow(body, fix, caps, byCat, incT, sy, carry){
+    var t = { Life: 0, Soul: 0, Future: 0 }, none = 0, capOf = {};
+    function add(g, v){ if (g) t[g] += v; else none += v; }
+    fix.forEach(function(b){ add(b.group, cycAmt(b, sy).amt); });
+    caps.forEach(function(c){ capOf[c.name] = true; add(catGroup(c.name), Math.max(c.amt, byCat[c.name] || 0)); });
+    Object.keys(byCat).forEach(function(k){ if (!capOf[k]) add(catGroup(k), byCat[k]); });
     var used = t.Life + t.Soul + t.Future + none + carry, left = incT - used, base = Math.max(incT, used) || 1;
     var sec = el("div", "sec cflow"), h = el("h2", null, "สัดส่วน Cashflow"); h.appendChild(el("small", "tot inc", "ของรายรับ ฿" + fmt(incT))); sec.appendChild(h);
     var bar = el("div", "cbar");
@@ -1343,7 +1365,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     GROUPS.forEach(function(g){ line(g[2], g[1], t[g[0]]); });
     if (none > 0.004) line("repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 4px)", "ยังไม่จัดกลุ่ม", none, "muted");
     if (carry > 0.004) line("var(--muted)", "ยกยอดจากรอบก่อน", carry, "muted");
-    if (left >= 0) { var r0 = el("div", "crow2 muted"), l0 = el("span"), d0 = el("i", "gdot hollow"); l0.appendChild(d0); l0.appendChild(document.createTextNode("ยังไม่ได้ใช้")); r0.appendChild(l0); r0.appendChild(el("span", "tot inc", "฿" + fmt(left) + " · " + Math.round(left / (incT || 1) * 100) + "%")); sec.appendChild(r0); }
+    if (left >= 0) { var r0 = el("div", "crow2 muted"), l0 = el("span"), d0 = el("i", "gdot hollow"); l0.appendChild(d0); l0.appendChild(document.createTextNode("เงินเหลือ")); r0.appendChild(l0); r0.appendChild(el("span", "tot inc", "฿" + fmt(left) + " · " + Math.round(left / (incT || 1) * 100) + "%")); sec.appendChild(r0); }
     else sec.appendChild(el("div", "crow2 over", "ใช้เกินรายรับ ฿" + fmt(-left)));
     if (none > 0.004) sec.appendChild(el("div", "mhint", "หมวดและค่าใช้จ่ายคงที่ที่ยังไม่มีกลุ่มนับรวมใน ยังไม่จัดกลุ่ม · ค่าใช้จ่ายคงที่ตั้งกลุ่มได้ในหน้าแก้รายการ"));
     var gb = el("button", "bud-add"); gb.innerHTML = phSvg("tag"); gb.appendChild(document.createTextNode("ตั้งกลุ่มให้หมวด"));
@@ -1377,7 +1399,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     });
     body.appendChild(sec);
   }
-  function budList(body, type, icon, total, sy){
+  function budList(body, type, icon, total, sy, envs){
     var isInc = type === "Income", lb = el("div", "blabel"), ld = el("span", "lead", BUD_TYPES[type]);
     if (isInc) ld.appendChild(incEye());
     var isFix = type === "Fixed", shown = budItems(type);
@@ -1385,9 +1407,16 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var nPaid = 0, leftT = 0;
     if (isFix) shown.forEach(function(b){ if (cycRec(b, sy).paidOn) nPaid++; else leftT += cycAmt(b, sy).amt; });
     lb.appendChild(ld);
-    lb.appendChild(el("small", isInc ? "tot inc" : "tot", isFix && shown.length ? "จ่ายแล้ว " + nPaid + "/" + shown.length + (leftT > 0.004 ? " · เหลือ ฿" + fmt(leftT) : " · ครบแล้ว") : "฿" + fmt(total) + " / เดือน"));
+    var paidLine = shown.length ? "จ่ายแล้ว " + nPaid + "/" + shown.length + (leftT > 0.004 ? " · เหลือ ฿" + fmt(leftT) : " · ครบแล้ว") : "";
+    lb.appendChild(el("small", isInc ? "tot inc" : "tot", isFix && envs ? "฿" + fmt(envs.total) + " / เดือน" : isFix ? paidLine : "฿" + fmt(total) + " / เดือน"));
     body.appendChild(lb);
-    var g = el("div", "glist cats"), items = budItems(type, true).sort(function(a, b){ return a.hidden - b.hidden || b.amt - a.amt; });
+    var g = el("div", "glist cats");
+    if (isFix && envs) {
+      // Two sections in one card: envelopes on top, then the one-off payments with their paid checklist.
+      g.appendChild(envs.node);
+      var fh = el("div", "fsec-h"); fh.appendChild(el("span", null, "จ่ายครั้งเดียว")); if (paidLine) fh.appendChild(el("span", "tot", paidLine)); g.appendChild(fh);
+    }
+    var items = budItems(type, true).sort(function(a, b){ return a.hidden - b.hidden || b.amt - a.amt; });
     items.forEach(function(b){
       // A row that holds a chip can't itself be a <button>; it is a div that acts as one.
       var withChip = isFix && !b.hidden, r = el(withChip ? "div" : "button", "grow-row" + (b.hidden ? " off" : ""));
