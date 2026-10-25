@@ -489,6 +489,21 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .bud-add .phi{width:17px;height:17px}
 .grow-row.off{opacity:.5}
 .amtin{font-variant-numeric:tabular-nums}
+.confirm{box-shadow:var(--shadow),inset 0 0 0 1.5px color-mix(in oklab,var(--accent) 35%,transparent)}
+.crow{display:flex;align-items:center;gap:10px;padding:8px 0}
+.crow+.crow{border-top:1px solid var(--line)}
+.crow .txt{flex:1;min-width:0}
+.crow .txt b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .txt small{display:block;font-size:12px;color:var(--muted)}
+.cin{width:96px;flex:none;font-size:15px;text-align:right;color:var(--text);padding:9px 10px;border-radius:var(--r-control);background:var(--bg);border:1.5px solid transparent;outline:none}
+.cin:focus{border-color:var(--accent)}
+.inc-hidden .cin.inc{filter:none;opacity:1;color:transparent;text-shadow:0 0 9px var(--text)}
+.inc-hidden .cin.inc:focus{color:var(--text);text-shadow:none}
+.cok{flex:none;padding:9px 12px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:600}
+.cok:disabled{opacity:.6}
+.est{font-size:11px;font-weight:500;color:var(--muted);background:var(--bg);border-radius:999px;padding:1px 7px;margin-left:2px}
+.flow .lead{flex-wrap:wrap}
+.est-t{color:var(--muted)!important}
 .inc{transition:filter .35s ease,opacity .35s ease}
 .inc-hidden .inc{filter:blur(.32em);opacity:.8;user-select:none;-webkit-user-select:none}
 .blabel .lead,.flow .lead{display:flex;align-items:center;gap:4px}
@@ -617,7 +632,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   // Income figures (and the spend budget derived from them) on the งบ tab stay blurred until shown on purpose (separate from the eye in the hero).
   var incShown = false; try { incShown = !!localStorage.getItem("incShown"); } catch (e) {}
   if (!incShown) document.documentElement.classList.add("inc-hidden");
-  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [], hidden: {}, cats: null, budget: [] };
+  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [], hidden: {}, cats: null, budget: [], actual: {} };
 
   function $(id){ return document.getElementById(id); }
   function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
@@ -1074,7 +1089,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     body.appendChild(el("div", "mhint", "แตะชื่อเพื่อติ๊กว่าคืนแล้ว"));
   }
 
-  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden ----------
+  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable ----------
+  // Variable items (salary that moves a little, electricity) use C as the estimate until the real figure for a salary
+  // cycle is confirmed; that lands in the Actual sheet: A=Cycle start (dd/mm/yyyy), B=Name, C=Amount.
   // Income − Fixed = what one salary cycle may spend. Spending = my share of every row in the cycle (all cards + cash),
   // minus rows named like a Fixed item (Netflix on a card is already inside Fixed, so it must not count twice).
   var BUD_TYPES = { Income: "รายรับ", Fixed: "ค่าใช้จ่ายคงที่", Category: "งบหมวด" };
@@ -1082,10 +1099,21 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [], type = String(r[0] || "").trim(), name = String(r[1] || "").trim();
-      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]) });
+      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]) });
     }
     return out;
   }
+  function parseActual(values){
+    var out = {};
+    for (var i = 1; i < values.length; i++) {
+      var r = values[i] || [], d = parseDate(r[0]), name = String(r[1] || "").trim();
+      if (d && name) out[dfmt(d) + "|" + name] = num(r[2]);
+    }
+    return out;
+  }
+  // This cycle's figure for an Income/Fixed item: the confirmed actual if there is one, else the usual amount.
+  function cycAmt(b, sy){ var a = (state.actual || {})[dfmt(sy.start) + "|" + b.name]; return a != null ? { amt: a, real: true } : { amt: b.amt, real: false }; }
+  function cycSum(items, sy){ return items.reduce(function(a, b){ return a + cycAmt(b, sy).amt; }, 0); }
   function budItems(type, withHidden){ return (state.budget || []).filter(function(b){ return b.type === type && (withHidden || !b.hidden); }); }
   function budSum(items){ return items.reduce(function(a, b){ return a + b.amt; }, 0); }
   function myShare(r){ return r.cost - others(r.parts).reduce(function(a, p){ return a + (p.amt || 0); }, 0); }
@@ -1099,13 +1127,17 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     $("next").disabled = state.offset >= 0;
 
     var inc = budItems("Income"), fix = budItems("Fixed"), caps = budItems("Category");
-    var incT = budSum(inc), fixT = budSum(fix), avail = incT - fixT;
+    var incT = cycSum(inc, sy), fixT = cycSum(fix, sy), avail = incT - fixT;
+    var pending = inc.concat(fix).filter(function(b){ return b.variable && !cycAmt(b, sy).real; });
+    var incEst = inc.some(function(b){ return b.variable && !cycAmt(b, sy).real; });
     var fixNames = {}; budItems("Fixed", true).forEach(function(b){ fixNames[b.name.toLowerCase()] = true; });
     var spent = 0, byCat = {};
     state.rows.forEach(function(r){
       if (r.date < sy.start || r.date > sy.end || fixNames[r.name.trim().toLowerCase()]) return;
       var m = myShare(r); spent += m; byCat[r.cat] = (byCat[r.cat] || 0) + m;
     });
+
+    if (pending.length && state.offset <= 0) renderConfirm(body, pending, sy);
 
     // Overview: what is left to spend, with a tick at where the cycle is today so pace is visible at a glance.
     var top = el("div", "sec bud-top");
@@ -1126,8 +1158,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       if (state.offset === 0 && !over) top.appendChild(el("div", "mhint", "เหลือ " + daysLeftN + " วัน · ใช้ได้วันละ ฿" + fmt(left / daysLeftN)));
       var fl = el("div", "flow");
       [["รายรับ", "฿" + fmt(incT)], ["หัก ค่าใช้จ่ายคงที่", "−฿" + fmt(fixT)], ["งบใช้จ่าย", "฿" + fmt(avail)]].forEach(function(x, i){
-        var d = el("div", i === 2 ? "eq" : null), lb0 = el("span", i === 0 ? "lead" : null, x[0]);
-        if (i === 0) lb0.appendChild(incEye());
+        var d = el("div", i === 2 ? "eq" : null), lb0 = el("span", i < 2 ? "lead" : null, x[0]);
+        if (i === 0) { lb0.appendChild(incEye()); if (incEst) lb0.appendChild(el("small", "est", "ประมาณการ")); }
+        if (i === 1 && fix.some(function(b){ return b.variable && !cycAmt(b, sy).real; })) lb0.appendChild(el("small", "est", "ประมาณการ"));
         d.appendChild(lb0); d.appendChild(el("span", i === 1 ? "tot" : "tot inc", x[1])); fl.appendChild(d);
       });
       top.appendChild(fl);
@@ -1158,11 +1191,38 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     ab.onclick = function(){ openBudgetEditor("Category", null); }; cs.appendChild(ab);
     body.appendChild(cs);
 
-    budList(body, "Income", "money", incT);
-    budList(body, "Fixed", "receipt", fixT);
+    budList(body, "Income", "money", incT, sy);
+    budList(body, "Fixed", "receipt", fixT, sy);
     body.appendChild(el("div", "mhint", "รายการใน Data ที่ชื่อตรงกับค่าใช้จ่ายคงที่ (เช่น Netflix ที่ตัดบัตร) ไม่นับซ้ำในยอดใช้ไป · รายการที่หารกับคนอื่นนับเฉพาะส่วนของเรา"));
   }
-  function budList(body, type, icon, total){
+  // "ยืนยันยอดรอบนี้": one row per variable item still on its estimate, prefilled so a match is one tap.
+  var confirmBusy = false;
+  function renderConfirm(body, items, sy){
+    var sec = el("div", "sec confirm"), h = el("h2", null, state.offset === 0 ? "ยืนยันยอดรอบนี้" : "ยืนยันยอดรอบนั้น"); h.appendChild(el("small", null, "ตอนนี้ใช้ยอดประมาณการ " + items.length + " รายการ"));
+    sec.appendChild(h);
+    items.forEach(function(b){
+      var isInc = b.type === "Income", row = el("div", "crow");
+      var ic = el("span", "phw icsq"); ic.innerHTML = phSvg(isInc ? "money" : "receipt"); row.appendChild(ic);
+      var t = el("div", "txt"); t.appendChild(el("b", null, b.name));
+      t.appendChild(el("small", isInc ? "tot inc" : "tot", "ปกติ ฿" + fmt(b.amt))); row.appendChild(t);
+      var inp = el("input", "cin amtin" + (isInc ? " inc" : "")); inp.inputMode = "decimal"; inp.autocomplete = "off"; inp.value = fmtAmt(b.amt);
+      inp.setAttribute("aria-label", "ยอดจริงของ " + b.name);
+      inp.onfocus = function(){ inp.select(); };
+      var ok = el("button", "cok", "ยืนยัน");
+      ok.onclick = function(){
+        var amt = num(inp.value);
+        if (!(amt > 0) || confirmBusy) { if (!(amt > 0)) inp.focus(); return; }
+        confirmBusy = true; ok.disabled = true; ok.textContent = "…";
+        gs("saveActual", { cycleStart: dfmt(sy.start), name: b.name, amount: amt })
+          .then(function(){ showToast("บันทึกยอดจริง " + b.name + " แล้ว"); return load(); })
+          .catch(function(e){ showToast(writeErrCopy(e)); })
+          .then(function(){ confirmBusy = false; ok.disabled = false; ok.textContent = "ยืนยัน"; });
+      };
+      row.appendChild(inp); row.appendChild(ok); sec.appendChild(row);
+    });
+    body.appendChild(sec);
+  }
+  function budList(body, type, icon, total, sy){
     var isInc = type === "Income", lb = el("div", "blabel"), ld = el("span", "lead", BUD_TYPES[type]);
     if (isInc) ld.appendChild(incEye());
     lb.appendChild(ld); lb.appendChild(el("small", isInc ? "tot inc" : "tot", "฿" + fmt(total) + " / เดือน")); body.appendChild(lb);
@@ -1171,8 +1231,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var r = el("button", "grow-row" + (b.hidden ? " off" : ""));
       var ic = el("span", "phw icsq"); ic.innerHTML = phSvg(icon); r.appendChild(ic);
       var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, b.name)); t.appendChild(nm);
-      if (b.note || b.hidden) t.appendChild(el("small", null, b.hidden ? "ซ่อนไว้ ไม่นับ" : b.note)); r.appendChild(t);
-      r.appendChild(el("div", isInc ? "amt tot inc" : "amt tot", "฿" + fmt(b.amt))); r.appendChild(el("span", "chev"));
+      var ca = cycAmt(b, sy), sub = b.hidden ? "ซ่อนไว้ ไม่นับ" : b.variable ? (ca.real ? (state.offset === 0 ? "ยอดจริงรอบนี้" : "ยอดจริง") : "ประมาณการ · รอยอดจริง") : b.note;
+      if (sub) t.appendChild(el("small", b.variable && !b.hidden && !ca.real ? "est-t" : null, sub)); r.appendChild(t);
+      r.appendChild(el("div", isInc ? "amt tot inc" : "amt tot", "฿" + fmt(ca.amt))); r.appendChild(el("span", "chev"));
       r.onclick = function(){ openBudgetEditor(type, b); }; g.appendChild(r);
     });
     var ab = el("button", "bud-add"); ab.innerHTML = phSvg("plus"); ab.appendChild(document.createTextNode("เพิ่ม" + BUD_TYPES[type]));
@@ -1187,7 +1248,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     sync(b); return b;
   }
   function openBudgetEditor(type, b){
-    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden) };
+    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable) };
+    var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtAmt(act.amt) : "" };
     var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + b.name : b.name);
     openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
       if (isNew && type === "Category") {
@@ -1207,9 +1269,19 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         g1._hint(type === "Fixed" ? "ถ้าจ่ายผ่านบัตรด้วย ให้ใช้ชื่อเดียวกับในรายการ จะได้ไม่นับซ้ำ · เปลี่ยนชื่อทีหลังไม่ได้" : "เปลี่ยนชื่อทีหลังไม่ได้");
         box.appendChild(g1); setTimeout(function(){ inp.focus(); }, 350);
       }
-      var g2 = group("ยอดต่อเดือน (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.placeholder = "0.00"; ai.autocomplete = "off";
+      var g2 = group(f.variable ? "ยอดปกติ / ประมาณการ (บาท)" : "ยอดต่อเดือน (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.placeholder = "0.00"; ai.autocomplete = "off";
       ai.value = f.amt === "" ? "" : fmtAmt(f.amt); ai.oninput = function(){ f.amt = ai.value; };
       g2.appendChild(ai); box.appendChild(g2);
+      if (type !== "Category") {
+        var gv = group(), vr = el("div", "swrow"), vt = el("div", "txt");
+        vt.appendChild(el("b", null, "ยอดไม่แน่นอน")); vt.appendChild(el("small", null, "ใช้ยอดปกติไปก่อน แล้วแอปจะถามยอดจริงทุกรอบเงินเดือน"));
+        vr.appendChild(vt); vr.appendChild(switchEl(f.variable, function(v){ f.variable = v; })); gv.appendChild(vr); box.appendChild(gv);
+      }
+      if (!isNew && b.variable) {
+        var ga = group("ยอดจริงรอบ " + dm(sy.start) + " – " + dm(sy.end)), aci = el("input", "txt amtin"); aci.inputMode = "decimal"; aci.placeholder = "ยังไม่ได้ใส่ (ใช้ยอดปกติ)"; aci.autocomplete = "off";
+        aci.value = f2.actual; aci.oninput = function(){ f2.actual = aci.value; };
+        ga.appendChild(aci); box.appendChild(ga);
+      }
       if (!isNew && type === "Category") setTimeout(function(){ ai.focus(); ai.select(); }, 350);
       var g3 = group("โน้ต"), ni = el("input", "txt"); ni.placeholder = "ไม่ใส่ก็ได้"; ni.maxLength = 80; ni.value = f.note; ni.oninput = function(){ f.note = ni.value.trim(); };
       g3.appendChild(ni); box.appendChild(g3);
@@ -1222,7 +1294,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var amt = num(f.amt);
       if (!f.name) { $("itemMsg").textContent = type === "Category" ? "เลือกหมวดก่อน" : "ใส่ชื่อก่อน"; return; }
       if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
-      saveItem("saveBudget", { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, isNew: isNew }, (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว");
+      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
+      var actNew = num(f2.actual), actChanged = !isNew && b.variable && actNew > 0 && !(act.real && Math.abs(actNew - act.amt) < 0.005);
+      if (!actChanged) { saveItem("saveBudget", arg, done); return; }
+      // Actual first, then the row itself; saveItem reloads once both are in.
+      if (itemBusy) return;
+      gs("saveActual", { cycleStart: dfmt(sy.start), name: f.name, amount: actNew }).then(function(){ saveItem("saveBudget", arg, done); })
+        .catch(function(e){ $("itemMsg").textContent = writeErrCopy(e); });
     });
   }
 
@@ -1754,6 +1832,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       state.full = !res.partial;
       state.recurring = parseRecurring(res.recurring || []);
       state.budget = parseBudget(res.budget || []);
+      state.actual = parseActual(res.actual || []);
     state.cash = res.cash || state.cash;
     state.salaryDay = res.salaryDay || state.salaryDay;
       var c = parseCards(res.cards || []); if (c) { state.cards = c.days; state.hidden = c.hidden; }
