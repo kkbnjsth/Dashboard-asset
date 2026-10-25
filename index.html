@@ -15,6 +15,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <link rel="icon" href="apple-touch-icon.png?v=3">
 <script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" async></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2174,12 +2175,29 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     a.href = u; a.download = billFile.name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(u); }, 1000);
   }
+  // PromptPay "Thai QR" payload (EMVCo): phone (10 digits), national/tax ID (13) or e-wallet (15), with a fixed amount.
+  function promptPayPayload(id, amt){
+    function f(tag, v){ return tag + ("0" + v.length).slice(-2) + v; }
+    id = String(id).replace(/\D/g, "");
+    var acct = id.length >= 15 ? f("03", id) : id.length >= 13 ? f("02", id) : f("01", ("0000000000000" + id.replace(/^0/, "66")).slice(-13));
+    var s = f("00", "01") + f("01", "12") + f("29", f("00", "A000000677010111") + acct) + f("53", "764") + f("54", amt.toFixed(2)) + f("58", "TH") + "6304";
+    var crc = 0xFFFF;
+    for (var i = 0; i < s.length; i++) {
+      crc ^= s.charCodeAt(i) << 8;
+      for (var k = 0; k < 8; k++) crc = crc & 0x8000 ? (crc << 1 ^ 0x1021) & 0xFFFF : crc << 1 & 0xFFFF;
+    }
+    return s + ("000" + crc.toString(16).toUpperCase()).slice(-4);
+  }
   // Fixed 360px wide, height grows with the items; drawn at 3x so the JPG stays sharp in chat apps.
   function drawBill(o){
     var W = 360, PAD = 22, PW = W - PAD * 2, S = 3, X0 = PAD + 22, X1 = W - PAD - 22;
     var TH = "\"IBM Plex Sans Thai\",Poppins,sans-serif", NUM = "\"IBM Plex Mono\",monospace";
     var INK = "#1f2937", SOFT = "#6b7280", FAINT = "#9ca3af";
     var cv = document.createElement("canvas"), x = cv.getContext("2d");
+    var total = o.items.reduce(function(a, it){ return a + it.amt; }, 0), qr = null;
+    // With a PromptPay number (from the server) and the QR library loaded, a pay-this-amount QR replaces the barcode.
+    // Level H (30% recovery) so the app logo can sit over its middle.
+    if (state.promptpay && window.qrcode) { qr = qrcode(0, "H"); qr.addData(promptPayPayload(state.promptpay, total)); qr.make(); }
     function font(w, px, fam){ x.font = w + " " + px + "px " + (fam || TH); }
     function fit(t, maxW){
       if (x.measureText(t).width <= maxW) return t;
@@ -2232,11 +2250,27 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       y += 30;
       if (draw) {
         font("700", 16); text("ยอดรวม", X0, y + 2);
-        font("700", 24, NUM); text("฿" + fmt(o.items.reduce(function(a, it){ return a + it.amt; }, 0)), X1, y + 4, "right");
+        font("700", 24, NUM); text("฿" + fmt(total), X1, y + 4, "right");
       }
       y += 22; if (draw) dash(y);
-      // Decorative barcode, stable per bill number.
       y += 22;
+      if (qr) {
+        var size = 150, n = qr.getModuleCount(), m = size / n, q0 = W / 2 - size / 2;
+        if (draw) {
+          font("600", 12.5); text("สแกนจ่ายด้วยแอปธนาคาร", W / 2, y, "center");
+          x.fillStyle = INK;
+          for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (qr.isDark(r, c)) x.fillRect(q0 + c * m, y + 12 + r * m, m + .3, m + .3);
+          if (o.logo) {
+            x.save(); x.translate(W / 2, y + 12 + size / 2);
+            x.fillStyle = "#fff"; x.beginPath(); x.arc(0, 0, 19, 0, Math.PI * 2); x.fill();
+            x.beginPath(); x.arc(0, 0, 16, 0, Math.PI * 2); x.clip(); x.drawImage(o.logo, -16, -16, 32, 32);
+            x.restore();
+          }
+          font("400", 11); text("พร้อมเพย์ xxx-xxx-" + state.promptpay.replace(/\D/g, "").slice(-4) + "  ·  ฿" + fmt(total), W / 2, y + size + 30, "center", SOFT);
+        }
+        y += size + 62;
+      } else {
+      // Decorative barcode, stable per bill number.
       if (draw) {
         var seed = 0; for (var i = 0; i < o.no.length; i++) seed = (seed * 31 + o.no.charCodeAt(i)) >>> 0;
         x.fillStyle = INK;
@@ -2247,6 +2281,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         font("400", 10, NUM); text(o.no.replace(/-/g, " "), W / 2, y + 52, "center", SOFT);
       }
       y += 78;
+      }
       if (draw) {
         font("500", 13); text("ขอบคุณที่ใช้บริการ 🙏", W / 2, y, "center");
         font("400", 11); text("โอนแล้วส่งสลิปมาด้วยน้า", W / 2, y + 18, "center", SOFT);
@@ -2306,6 +2341,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       state.actual = parseActual(res.actual || []);
     state.cash = res.cash || state.cash;
     state.salaryDay = res.salaryDay || state.salaryDay;
+    state.promptpay = res.promptpay || "";
       var c = parseCards(res.cards || []); if (c) { state.cards = c.days; state.hidden = c.hidden; state.due = c.due; }
       state.cats = parseCats(res.categories);
       CARD_IMG = res.cardImg || CARD_IMG; learnCardColours();
