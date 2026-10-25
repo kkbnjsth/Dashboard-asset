@@ -17,7 +17,7 @@
 <script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   box-sizing:border-box;
@@ -275,6 +275,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .ghost{padding:9px 14px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow);color:var(--muted);font-size:13px;font-weight:500}
 .composer{background:var(--surface);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(20,23,26,.05)}
 .composer textarea{resize:none;min-height:56px}
+.billimg{display:block;width:100%;max-width:360px;margin:0 auto;border-radius:14px}
 .crow{display:flex;align-items:center;gap:10px;margin-top:8px}
 .attach{padding:9px 14px;border-radius:999px;background:var(--bg);font-size:13px;font-weight:500;cursor:pointer}
 .crow .sub{flex:1;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -607,6 +608,14 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   <div class="panel auto" role="dialog" aria-label="รายการค้างจ่ายคืน">
     <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close" data-ph="x"></button></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
+    <div class="composer" id="oweBillBar" hidden><button class="primary" id="oweBill" data-ph="receipt">สร้างใบเรียกเก็บเงิน</button></div>
+  </div>
+</div>
+<div class="overlay slide" id="billSheet" hidden>
+  <div class="panel auto" role="dialog" aria-label="ใบเรียกเก็บเงิน">
+    <div class="phead"><b>ใบเรียกเก็บเงิน</b><button class="icon-btn" id="closeBill" aria-label="Close" data-ph="x"></button></div>
+    <div class="scroller"><img class="billimg" id="billImg" alt="ใบเรียกเก็บเงิน"></div>
+    <div class="composer"><button class="primary" id="billShare" disabled>บันทึก / ส่งรูป</button></div>
   </div>
 </div>
 <div class="overlay slide" id="cardSheet" hidden>
@@ -2087,6 +2096,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var isMeSheet = owePerson === ME;
     var left = items.filter(function(it){ return !(isMeSheet ? it.done : it.p.done); }).reduce(function(a, it){ return a + (isMeSheet ? it.amt : it.p.amt); }, 0);
     $("oweTitle").textContent = isMeSheet ? (oweCard || "ของเรา") + " ต้องเตรียม ฿" + fmt(left) : owePerson + " ค้าง ฿" + fmt(left);
+    $("oweBillBar").hidden = isMeSheet || left < 0.005;
     var box = $("oweBody"); box.textContent = "";
     var h = el("h2", null, items.length + " รายการ"); h.appendChild(el("small", null, isMeSheet ? "แตะยอดเมื่อโยกเงินไปพักแล้ว (เป็น Paid)" : "แตะยอดเพื่อสลับว่าจ่ายคืนแล้วหรือยัง")); box.appendChild(h);
     if (!items.length) { box.appendChild(el("div", "empty", "ไม่มีรายการค้าง")); return; }
@@ -2120,6 +2130,142 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       rt.appendChild(pb); tx.appendChild(rt);
       box.appendChild(tx);
     });
+  }
+
+  // ---------- Bill image: one person's unpaid shares drawn as a paper receipt on gray, saved/shared as JPG ----------
+  // Built when the preview opens, so the share button can hand over a ready file inside the tap (iOS needs that).
+  var billFile = null;
+  function openBill(){
+    var items = oweItems().filter(function(it){ return !it.p.done; }).sort(function(a, b){ return a.r.date - b.r.date || a.r.row - b.r.row; });
+    if (!items.length) return;
+    var now = new Date(), yr = now.getFullYear(), h = 0;
+    for (var i = 0; i < owePerson.length; i++) h = (h * 31 + owePerson.charCodeAt(i)) >>> 0;
+    var bill = {
+      person: owePerson,
+      no: "CJ-" + String(yr).slice(2) + ("0" + (now.getMonth() + 1)).slice(-2) + ("0" + now.getDate()).slice(-2) + "-" + (h % 4096).toString(16).toUpperCase().padStart(3, "0"),
+      date: now.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + " · " + now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      items: items.map(function(it){ return { name: it.r.name, date: dshort(it.r.date) + (it.r.date.getFullYear() !== yr ? " " + it.r.date.getFullYear() : ""), amt: it.p.amt, whole: it.r.cost }; })
+    };
+    billFile = null; $("billShare").disabled = true; $("billImg").removeAttribute("src");
+    showSheet("billSheet");
+    var faces = ["400 13px 'IBM Plex Sans Thai'", "500 13px 'IBM Plex Sans Thai'", "600 13px 'IBM Plex Sans Thai'", "700 13px 'IBM Plex Sans Thai'",
+      "400 13px 'IBM Plex Mono'", "500 13px 'IBM Plex Mono'", "700 13px 'IBM Plex Mono'", "600 13px Poppins", "400 13px Poppins"];
+    // App icon for the round logo; same origin, so the canvas stays exportable. Falls back to a "CJ" badge.
+    var logo = new Promise(function(ok){
+      var im = new Image(); im.onload = function(){ ok(im); }; im.onerror = function(){ ok(null); }; im.src = "apple-touch-icon.png?v=3";
+    });
+    Promise.all(faces.map(function(f){ return document.fonts.load(f).catch(function(){}); }).concat(logo)).then(function(res){
+      bill.logo = res[res.length - 1];
+      var cv = drawBill(bill);
+      $("billImg").src = cv.toDataURL("image/jpeg", 0.92);
+      cv.toBlob(function(b){
+        billFile = new File([b], "บิล-" + owePerson + "-" + bill.no + ".jpg", { type: "image/jpeg" });
+        $("billShare").disabled = false;
+      }, "image/jpeg", 0.92);
+    });
+  }
+  function shareBill(){
+    if (!billFile) return;
+    if (navigator.canShare && navigator.canShare({ files: [billFile] })) {
+      navigator.share({ files: [billFile] }).catch(function(){});
+      return;
+    }
+    var a = document.createElement("a"), u = URL.createObjectURL(billFile);
+    a.href = u; a.download = billFile.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 1000);
+  }
+  // Fixed 360px wide, height grows with the items; drawn at 3x so the JPG stays sharp in chat apps.
+  function drawBill(o){
+    var W = 360, PAD = 22, PW = W - PAD * 2, S = 3, X0 = PAD + 22, X1 = W - PAD - 22;
+    var TH = "\"IBM Plex Sans Thai\",Poppins,sans-serif", NUM = "\"IBM Plex Mono\",monospace";
+    var INK = "#1f2937", SOFT = "#6b7280", FAINT = "#9ca3af";
+    var cv = document.createElement("canvas"), x = cv.getContext("2d");
+    function font(w, px, fam){ x.font = w + " " + px + "px " + (fam || TH); }
+    function fit(t, maxW){
+      if (x.measureText(t).width <= maxW) return t;
+      while (t.length > 1 && x.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+      return t + "…";
+    }
+    function text(t, px, y, al, col){ x.textAlign = al || "left"; x.fillStyle = col || INK; x.fillText(t, px, y); }
+    function dash(y){
+      x.save(); x.strokeStyle = "#d1d5db"; x.lineWidth = 1; x.setLineDash([4, 4]);
+      x.beginPath(); x.moveTo(X0, y); x.lineTo(X1, y); x.stroke(); x.restore();
+    }
+    function row(l, r, y, rw, rfam){ font("400", 12.5); text(l, X0, y, "left", SOFT); font(rw, rw === "600" ? 13.5 : 12.5, rfam); text(r, X1, y, "right"); }
+    // Two passes: the first only measures how tall the slip is, the second draws it.
+    function layout(draw){
+      var y = PAD + 40;
+      if (draw) {
+        x.save(); x.translate(W / 2, y + 2); x.fillStyle = C_DEEP;
+        x.beginPath(); x.arc(0, 0, 18, 0, Math.PI * 2); x.fill();
+        if (o.logo) { x.clip(); x.drawImage(o.logo, -18, -18, 36, 36); }
+        else { font("600", 15, "Poppins"); text("CJ", 0, 5.5, "center", C_LIME); }
+        x.restore();
+      }
+      y += 44;
+      if (draw) { font("600", 19); text("ใบเรียกเก็บเงิน", W / 2, y, "center"); }
+      y += 20;
+      if (draw) { font("400", 11.5, "Poppins"); text("ChaiJaai · BILL", W / 2, y, "center", FAINT); }
+      y += 22; if (draw) dash(y);
+      y += 26;
+      if (draw) {
+        row("เลขที่", o.no, y, "500", NUM);
+        row("วันที่", o.date, y + 21, "500", NUM);
+        row("เรียกเก็บจาก", o.person, y + 42, "600");
+      }
+      y += 60; if (draw) dash(y);
+      y += 24;
+      if (draw) { font("500", 11); text("รายการ", X0, y, "left", FAINT); text("ยอดที่ต้องจ่าย", X1, y, "right", FAINT); }
+      o.items.forEach(function(it){
+        y += 28;
+        if (draw) {
+          font("500", 13.5, NUM); var aw = x.measureText(fmt(it.amt)).width;
+          text(fmt(it.amt), X1, y, "right");
+          font("500", 13.5); text(fit(it.name, X1 - X0 - aw - 14), X0, y);
+          font("400", 11); text(it.date + (Math.abs(it.whole - it.amt) > 0.004 ? "  ·  ทั้งบิล ฿" + fmt(it.whole) : ""), X0, y + 17, "left", SOFT);
+        }
+        y += 17;
+      });
+      y += 20; if (draw) dash(y);
+      y += 24;
+      if (draw) { font("400", 12.5); text("จำนวน", X0, y, "left", SOFT); text(o.items.length + " รายการ", X1, y, "right", SOFT); }
+      y += 30;
+      if (draw) {
+        font("700", 16); text("ยอดรวม", X0, y + 2);
+        font("700", 24, NUM); text("฿" + fmt(o.items.reduce(function(a, it){ return a + it.amt; }, 0)), X1, y + 4, "right");
+      }
+      y += 22; if (draw) dash(y);
+      // Decorative barcode, stable per bill number.
+      y += 22;
+      if (draw) {
+        var seed = 0; for (var i = 0; i < o.no.length; i++) seed = (seed * 31 + o.no.charCodeAt(i)) >>> 0;
+        x.fillStyle = INK;
+        for (var bx = X0 + 30; bx < X1 - 30;) {
+          seed = (seed * 1103515245 + 12345) >>> 0; var w = 1 + (seed >>> 16) % 3;
+          x.fillRect(bx, y, w, 38); bx += w + 1 + (seed >>> 8) % 3;
+        }
+        font("400", 10, NUM); text(o.no.replace(/-/g, " "), W / 2, y + 52, "center", SOFT);
+      }
+      y += 78;
+      if (draw) {
+        font("500", 13); text("ขอบคุณที่ใช้บริการ 🙏", W / 2, y, "center");
+        font("400", 11); text("โอนแล้วส่งสลิปมาด้วยน้า", W / 2, y + 18, "center", SOFT);
+      }
+      return y + 40;
+    }
+    var bot = layout(false), H = bot + PAD + 8;
+    cv.width = W * S; cv.height = H * S; x.scale(S, S);
+    x.fillStyle = "#e5e7eb"; x.fillRect(0, 0, W, H);
+    // Paper with zigzag (torn) top and bottom edges.
+    var top = PAD, L = PAD, R = PAD + PW, T = 8, n = Math.round(PW / 12), st = PW / n, k;
+    x.beginPath(); x.moveTo(L, top + T / 2);
+    for (k = 0; k < n; k++) { x.lineTo(L + st * k + st / 2, top); x.lineTo(L + st * (k + 1), top + T / 2); }
+    x.lineTo(R, bot - T / 2);
+    for (k = n; k > 0; k--) { x.lineTo(L + st * k - st / 2, bot); x.lineTo(L + st * (k - 1), bot - T / 2); }
+    x.closePath();
+    x.save(); x.shadowColor = "rgba(15,23,42,.12)"; x.shadowBlur = 14; x.shadowOffsetY = 4; x.fillStyle = "#fff"; x.fill(); x.restore();
+    layout(true);
+    return cv;
   }
   function saveEdit(){
     if (!editing || writing) return;
@@ -2669,6 +2815,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   $("editSave").onclick = saveEdit;
   $("editDel").onclick = deleteEdit;
   $("closeOwe").onclick = closeOwe;
+  $("oweBill").onclick = openBill;
+  $("closeBill").onclick = function(){ hideSheet("billSheet"); };
+  $("billShare").onclick = shareBill;
   $("closeCards").onclick = closeCards;
   $("cardMgrBtn").onclick = function(){ closeCards(); openCardMgr(); };
   ["cardMgr", "catMgr", "itemSheet"].forEach(function(id){
