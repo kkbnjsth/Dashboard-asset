@@ -504,6 +504,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .est{font-size:11px;font-weight:500;color:var(--muted);background:var(--bg);border-radius:999px;padding:1px 7px;margin-left:2px}
 .flow .lead{flex-wrap:wrap}
 .est-t{color:var(--muted)!important}
+.grow-row .frt{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.pchip{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line-mid);white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.pchip.on{background:var(--paid-soft);color:var(--paid);box-shadow:none}
+.pchip:disabled{opacity:.6}
 .inc{transition:filter .35s ease,opacity .35s ease}
 .inc-hidden .inc{filter:blur(.32em);opacity:.8;user-select:none;-webkit-user-select:none}
 .blabel .lead,.flow .lead{display:flex;align-items:center;gap:4px}
@@ -1089,9 +1093,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     body.appendChild(el("div", "mhint", "แตะชื่อเพื่อติ๊กว่าคืนแล้ว"));
   }
 
-  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable ----------
+  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable, G=Category ----------
   // Variable items (salary that moves a little, electricity) use C as the estimate until the real figure for a salary
-  // cycle is confirmed; that lands in the Actual sheet: A=Cycle start (dd/mm/yyyy), B=Name, C=Amount.
+  // cycle is confirmed; that lands in the Actual sheet: A=Cycle start (dd/mm/yyyy), B=Name, C=Amount (blank = usual),
+  // D=Paid on (Fixed items ticked off for that cycle).
   // Income − Fixed = what one salary cycle may spend. Spending = my share of every row in the cycle (all cards + cash),
   // minus rows named like a Fixed item (Netflix on a card is already inside Fixed, so it must not count twice).
   var BUD_TYPES = { Income: "รายรับ", Fixed: "ค่าใช้จ่ายคงที่", Category: "งบหมวด" };
@@ -1099,7 +1104,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [], type = String(r[0] || "").trim(), name = String(r[1] || "").trim();
-      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]) });
+      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim() });
     }
     return out;
   }
@@ -1107,12 +1112,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var out = {};
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [], d = parseDate(r[0]), name = String(r[1] || "").trim();
-      if (d && name) out[dfmt(d) + "|" + name] = num(r[2]);
+      if (d && name) out[dfmt(d) + "|" + name] = { amt: String(r[2] || "").trim() === "" ? null : num(r[2]), paidOn: parseDate(r[3]) };
     }
     return out;
   }
   // This cycle's figure for an Income/Fixed item: the confirmed actual if there is one, else the usual amount.
-  function cycAmt(b, sy){ var a = (state.actual || {})[dfmt(sy.start) + "|" + b.name]; return a != null ? { amt: a, real: true } : { amt: b.amt, real: false }; }
+  function cycRec(b, sy){ return (state.actual || {})[dfmt(sy.start) + "|" + b.name] || {}; }
+  function cycAmt(b, sy){ var a = cycRec(b, sy).amt; return a != null ? { amt: a, real: true } : { amt: b.amt, real: false }; }
   function cycSum(items, sy){ return items.reduce(function(a, b){ return a + cycAmt(b, sy).amt; }, 0); }
   function budItems(type, withHidden){ return (state.budget || []).filter(function(b){ return b.type === type && (withHidden || !b.hidden); }); }
   function budSum(items){ return items.reduce(function(a, b){ return a + b.amt; }, 0); }
@@ -1225,20 +1231,65 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function budList(body, type, icon, total, sy){
     var isInc = type === "Income", lb = el("div", "blabel"), ld = el("span", "lead", BUD_TYPES[type]);
     if (isInc) ld.appendChild(incEye());
-    lb.appendChild(ld); lb.appendChild(el("small", isInc ? "tot inc" : "tot", "฿" + fmt(total) + " / เดือน")); body.appendChild(lb);
+    var isFix = type === "Fixed", shown = budItems(type);
+    // Fixed: a checklist for this cycle, so the heading counts what is ticked and what is still to pay.
+    var nPaid = 0, leftT = 0;
+    if (isFix) shown.forEach(function(b){ if (cycRec(b, sy).paidOn) nPaid++; else leftT += cycAmt(b, sy).amt; });
+    lb.appendChild(ld);
+    lb.appendChild(el("small", isInc ? "tot inc" : "tot", isFix && shown.length ? "จ่ายแล้ว " + nPaid + "/" + shown.length + (leftT > 0.004 ? " · เหลือ ฿" + fmt(leftT) : " · ครบแล้ว") : "฿" + fmt(total) + " / เดือน"));
+    body.appendChild(lb);
     var g = el("div", "glist cats"), items = budItems(type, true).sort(function(a, b){ return a.hidden - b.hidden || b.amt - a.amt; });
     items.forEach(function(b){
-      var r = el("button", "grow-row" + (b.hidden ? " off" : ""));
-      var ic = el("span", "phw icsq"); ic.innerHTML = phSvg(icon); r.appendChild(ic);
+      // A row that holds a chip can't itself be a <button>; it is a div that acts as one.
+      var withChip = isFix && !b.hidden, r = el(withChip ? "div" : "button", "grow-row" + (b.hidden ? " off" : ""));
+      if (withChip) { r.setAttribute("role", "button"); r.tabIndex = 0; r.onkeydown = function(e){ if (e.key === "Enter") openBudgetEditor(type, b); }; }
+      var ic;
+      if (b.cat) ic = catIconEl(b.cat, "icsq"); else { ic = el("span", "phw icsq"); ic.innerHTML = phSvg(icon); }
+      r.appendChild(ic);
       var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, b.name)); t.appendChild(nm);
-      var ca = cycAmt(b, sy), sub = b.hidden ? "ซ่อนไว้ ไม่นับ" : b.variable ? (ca.real ? (state.offset === 0 ? "ยอดจริงรอบนี้" : "ยอดจริง") : "ประมาณการ · รอยอดจริง") : b.note;
+      var ca = cycAmt(b, sy), st = b.hidden ? "ซ่อนไว้ ไม่นับ" : b.variable ? (ca.real ? (state.offset === 0 ? "ยอดจริงรอบนี้" : "ยอดจริง") : "ประมาณการ · รอยอดจริง") : b.note;
+      var sub = [isFix ? b.cat : "", st].filter(Boolean).join(" · ");
       if (sub) t.appendChild(el("small", b.variable && !b.hidden && !ca.real ? "est-t" : null, sub)); r.appendChild(t);
-      r.appendChild(el("div", isInc ? "amt tot inc" : "amt tot", "฿" + fmt(ca.amt))); r.appendChild(el("span", "chev"));
+      if (withChip) {
+        var rt = el("div", "frt"); rt.appendChild(el("div", "amt tot", "฿" + fmt(ca.amt)));
+        rt.appendChild(paidChip(b, sy)); r.appendChild(rt);
+      } else { r.appendChild(el("div", isInc ? "amt tot inc" : "amt tot", "฿" + fmt(ca.amt))); r.appendChild(el("span", "chev")); }
       r.onclick = function(){ openBudgetEditor(type, b); }; g.appendChild(r);
     });
     var ab = el("button", "bud-add"); ab.innerHTML = phSvg("plus"); ab.appendChild(document.createTextNode("เพิ่ม" + BUD_TYPES[type]));
     ab.onclick = function(){ openBudgetEditor(type, null); }; g.appendChild(ab);
     body.appendChild(g);
+  }
+  // "จ่ายแล้ว" chip on a Fixed row: ticks it off for this salary cycle. A variable item still on its estimate asks for
+  // the real amount first, so paying and confirming the figure is one step.
+  var payBusy = false;
+  function paidChip(b, sy){
+    var paid = !!cycRec(b, sy).paidOn, c = el("button", "pchip" + (paid ? " on" : ""), paid ? "จ่ายแล้ว ✓" : "ยังไม่จ่าย");
+    c.type = "button"; c.setAttribute("aria-pressed", String(paid));
+    c.title = paid ? "จ่ายเมื่อ " + dm(cycRec(b, sy).paidOn) + " · แตะเพื่อยกเลิก" : "แตะเมื่อจ่ายแล้ว";
+    c.onclick = function(ev){
+      ev.stopPropagation();
+      if (payBusy) return;
+      var arg = { cycleStart: dfmt(sy.start), name: b.name, paid: !paid };
+      if (!paid && b.variable && !cycAmt(b, sy).real) {
+        var v = { amt: fmtAmt(b.amt) };
+        openItem("จ่าย " + b.name, "จ่ายแล้ว", function(box){
+          var g1 = group("ยอดที่จ่ายจริงรอบนี้ (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.autocomplete = "off"; ai.value = v.amt;
+          ai.oninput = function(){ v.amt = ai.value; }; g1.appendChild(ai); g1._hint("ปกติ ฿" + fmt(b.amt)); box.appendChild(g1);
+          setTimeout(function(){ ai.focus(); ai.select(); }, 350);
+        }, function(){
+          var amt = num(v.amt);
+          if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
+          arg.amount = amt; saveItem("setFixedPaid", arg, "จ่าย " + b.name + " แล้ว");
+        });
+        return;
+      }
+      payBusy = true; c.disabled = true; c.textContent = "…";
+      gs("setFixedPaid", arg).then(function(){ showToast(paid ? "ยกเลิก จ่ายแล้ว ของ " + b.name : "จ่าย " + b.name + " แล้ว"); return load(); })
+        .catch(function(e){ showToast(writeErrCopy(e)); render(); })
+        .then(function(){ payBusy = false; });
+    };
+    return c;
   }
   function incEye(){
     var b = el("button", "inc-eye"); b.type = "button";
@@ -1248,7 +1299,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     sync(b); return b;
   }
   function openBudgetEditor(type, b){
-    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable) };
+    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "" };
     var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtAmt(act.amt) : "" };
     var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + b.name : b.name);
     openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
@@ -1277,6 +1328,19 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         vt.appendChild(el("b", null, "ยอดไม่แน่นอน")); vt.appendChild(el("small", null, "ใช้ยอดปกติไปก่อน แล้วแอปจะถามยอดจริงทุกรอบเงินเดือน"));
         vr.appendChild(vt); vr.appendChild(switchEl(f.variable, function(v){ f.variable = v; })); gv.appendChild(vr); box.appendChild(gv);
       }
+      if (type === "Fixed") {
+        // Same list (and icons) as Categories; "ไม่ระบุ" leaves G blank.
+        var gc = group("หมวด"), cg = el("div", "chips"), opts = [""].concat(catNames());
+        if (f.cat && opts.indexOf(f.cat) < 0) opts.push(f.cat);
+        opts.forEach(function(n){
+          var c = el("button", "chip"); c.type = "button";
+          if (n) c.appendChild(catIconEl(n)); c.appendChild(document.createTextNode(n || "ไม่ระบุ"));
+          c.setAttribute("aria-pressed", String(f.cat === n));
+          c.onclick = function(){ f.cat = n; [].forEach.call(cg.children, function(y){ y.setAttribute("aria-pressed", String(y === c)); }); };
+          cg.appendChild(c);
+        });
+        gc.appendChild(cg); gc._hint("ใช้แค่จัดกลุ่มและไอคอน ไม่นับรวมกับงบหมวด"); box.appendChild(gc);
+      }
       if (!isNew && b.variable) {
         var ga = group("ยอดจริงรอบ " + dm(sy.start) + " – " + dm(sy.end)), aci = el("input", "txt amtin"); aci.inputMode = "decimal"; aci.placeholder = "ยังไม่ได้ใส่ (ใช้ยอดปกติ)"; aci.autocomplete = "off";
         aci.value = f2.actual; aci.oninput = function(){ f2.actual = aci.value; };
@@ -1294,7 +1358,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var amt = num(f.amt);
       if (!f.name) { $("itemMsg").textContent = type === "Category" ? "เลือกหมวดก่อน" : "ใส่ชื่อก่อน"; return; }
       if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
-      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
+      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
       var actNew = num(f2.actual), actChanged = !isNew && b.variable && actNew > 0 && !(act.real && Math.abs(actNew - act.amt) < 0.005);
       if (!actChanged) { saveItem("saveBudget", arg, done); return; }
       // Actual first, then the row itself; saveItem reloads once both are in.
