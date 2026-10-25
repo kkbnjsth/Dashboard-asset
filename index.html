@@ -514,6 +514,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .gdot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%}
 .chip .gdot{margin-right:-2px}
 .gdot.hollow{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.gbadge{font-style:normal;font-size:11px;font-weight:600;line-height:1;padding:3px 7px;border-radius:999px;color:var(--g);background:color-mix(in oklab,var(--g) 14%,transparent)}
+.flow .cline{display:flex;justify-content:space-between;align-items:center;width:100%;padding:3px 0;font:inherit;color:inherit;text-align:left;-webkit-tap-highlight-color:transparent}
+.flow .cline>span:first-child{color:var(--muted);text-decoration:underline dotted;text-underline-offset:3px}
+.flow .cline.add{justify-content:flex-start;color:var(--accent);font-size:12.5px;font-weight:600;padding-top:8px}
 .grow-row .txt b .gdot{width:7px;height:7px}
 .cbar{display:flex;gap:2px;height:10px;border-radius:99px;overflow:hidden;background:var(--line);margin-bottom:12px}
 .cbar i{display:block;height:100%}
@@ -1127,7 +1131,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     body.appendChild(el("div", "mhint", "แตะชื่อเพื่อติ๊กว่าคืนแล้ว"));
   }
 
-  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable, G=Category, H=Group ----------
+  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable, G=Category, H=Group, I=Match ----------
   // Variable items (salary that moves a little, electricity) use C as the estimate until the real figure for a salary
   // cycle is confirmed; that lands in the Actual sheet: A=Cycle start (dd/mm/yyyy), B=Name, C=Amount (blank = usual),
   // D=Paid on (Fixed items ticked off for that cycle).
@@ -1138,7 +1142,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [], type = String(r[0] || "").trim(), name = String(r[1] || "").trim();
-      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim(), group: groupOf(r[7]) });
+      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim(), group: groupOf(r[7]), match: matchWords(r[8]) });
     }
     return out;
   }
@@ -1157,28 +1161,73 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function budItems(type, withHidden){ return (state.budget || []).filter(function(b){ return b.type === type && (withHidden || !b.hidden); }); }
   function budSum(items){ return items.reduce(function(a, b){ return a + b.amt; }, 0); }
   function myShare(r){ return r.cost - others(r.parts).reduce(function(a, p){ return a + (p.amt || 0); }, 0); }
+  // Budget!I: words that tie a card row to a Fixed item when the statement name differs ("claude" for
+  // "ANTHROPIC* CLAUDE SUB"). Comma separated; a row matches if its name contains any of them, case-insensitive.
+  function matchWords(v){ return String(v || "").split(/[,;]/).map(function(w){ return w.trim().toLowerCase(); }).filter(Boolean); }
+  // The Fixed item (hidden ones too) a Data row belongs to: same name, or a match word inside the row's name.
+  function fixedFor(r){
+    var n = r.name.trim().toLowerCase();
+    return budItems("Fixed", true).filter(function(b){
+      return b.name.toLowerCase() === n || (b.match || []).some(function(w){ return n.indexOf(w) >= 0; });
+    })[0] || null;
+  }
   // Spending in one salary cycle, by transaction date (not when it was moved aside or the bill was paid):
-  // my share of every row in it, minus rows named like a Fixed item (already inside Fixed).
+  // my share of every row in it, minus rows that belong to a Fixed item (already inside Fixed).
   function cycleSpend(sy){
-    var fixNames = {}; budItems("Fixed", true).forEach(function(b){ fixNames[b.name.toLowerCase()] = true; });
     var spent = 0, byCat = {};
     state.rows.forEach(function(r){
-      if (r.date < sy.start || r.date > sy.end || fixNames[r.name.trim().toLowerCase()]) return;
+      if (r.date < sy.start || r.date > sy.end || fixedFor(r)) return;
       var m = myShare(r); spent += m; byCat[r.cat] = (byCat[r.cat] || 0) + m;
     });
     return { spent: spent, byCat: byCat };
   }
   // Overspend carried into a cycle: the last CARRY_CYCLES cycles chained, deficits only. A surplus is not carried,
   // since that money may already be saved or spent elsewhere; older cycles predate the budget, so they are left out.
-  var CARRY_CYCLES = 3;
+  // A cycle's carry can be typed in (Actual row named CARRY_NAME) when the guess is wrong, e.g. the first cycle,
+  // whose money was never planned with this budget. A typed figure wins, and later cycles chain on from it.
+  var CARRY_CYCLES = 3, CARRY_NAME = "ยกยอดจากรอบก่อน";
+  function carryOverride(sy){ var a = cycRec({ name: CARRY_NAME }, sy).amt; return a != null ? a : null; }
   function carryIn(offset){
     var inc = budItems("Income"), fix = budItems("Fixed"), carry = 0;
-    if (!inc.length) return 0;
-    for (var k = offset - CARRY_CYCLES; k < offset; k++) {
-      var sy = cycleFor(state.salaryDay, k);
-      carry = Math.max(0, cycleSpend(sy).spent + carry - (cycSum(inc, sy) - cycSum(fix, sy)));
+    if (inc.length) {
+      for (var k = offset - CARRY_CYCLES; k < offset; k++) {
+        var sy = cycleFor(state.salaryDay, k), cin = carryOverride(sy);
+        carry = Math.max(0, cycleSpend(sy).spent + (cin != null ? cin : carry) - (cycSum(inc, sy) - cycSum(fix, sy)));
+      }
     }
-    return carry;
+    var own = carryOverride(cycleFor(state.salaryDay, offset));
+    return { amt: own != null ? own : carry, manual: own != null, computed: carry };
+  }
+  // My share of card rows dated before this cycle that are still Pending: the card debt this salary has to clear.
+  function pendingBefore(sy){
+    return (state.rows || []).map(myEntry).filter(function(e){ return e && !e.done && e.amt > 0.004 && e.r.date < sy.start; })
+      .reduce(function(a, e){ return a + e.amt; }, 0);
+  }
+  function openCarryEditor(sy, ci){
+    var v = { amt: fmtAmt(ci.amt) }, owed = pendingBefore(sy);
+    openItem("ยกยอดจากรอบก่อน", "บันทึก", function(box){
+      var g1 = group("ยอดที่เงินเดือนรอบนี้ต้องเอาไปโปะ (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.autocomplete = "off";
+      ai.value = v.amt; ai.oninput = function(){ v.amt = ai.value; }; g1.appendChild(ai);
+      g1._hint("แอปคำนวณได้ ฿" + fmt(ci.computed) + " จากยอดที่ใช้เกินงบรอบก่อน (ย้อน " + CARRY_CYCLES + " รอบ) · ถ้าไม่ตรงกับหนี้ที่ต้องโปะจริง ใส่ยอดจริงแทนได้ ใส่ 0 ได้ถ้าไม่มี");
+      box.appendChild(g1);
+      if (owed > 0.004) {
+        // The usual right answer when last cycle's leftover is already gone: card debt still Pending from before.
+        var g2 = group(), sr = el("div", "swrow"), st = el("div", "txt");
+        st.appendChild(el("b", null, "ยอดบัตรรอบก่อนที่ยังค้าง ฿" + fmt(owed))); st.appendChild(el("small", null, "ส่วนของเราที่ยังเป็น Pending ของรายการก่อน " + dm(sy.start)));
+        var use = el("button", "pact", "ใช้ยอดนี้"); use.type = "button"; use.onclick = function(){ ai.value = fmtAmt(owed); v.amt = ai.value; };
+        sr.appendChild(st); sr.appendChild(use); g2.appendChild(sr); box.appendChild(g2);
+      }
+      if (ci.manual) {
+        var back = el("button", "bud-add", "กลับไปใช้ยอดที่แอปคำนวณ (฿" + fmt(ci.computed) + ")"); back.type = "button";
+        back.onclick = function(){ saveItem("saveCarry", { cycleStart: dfmt(sy.start), clear: true }, "กลับไปใช้ยอดที่แอปคำนวณแล้ว"); };
+        box.appendChild(back);
+      }
+      setTimeout(function(){ ai.focus(); ai.select(); }, 350);
+    }, function(){
+      var s = String(v.amt).trim(), amt = num(s);
+      if (s === "" || !(amt >= 0)) { $("itemMsg").textContent = "ใส่ยอด (0 ได้ถ้าไม่มียอดยกมา)"; return; }
+      saveItem("saveCarry", { cycleStart: dfmt(sy.start), amount: amt }, "บันทึกยอดยกมาแล้ว");
+    });
   }
   function renderBudgetPage(body){
     var sy = cycleFor(state.salaryDay, state.offset);
@@ -1190,7 +1239,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     $("next").disabled = state.offset >= 0;
 
     var inc = budItems("Income"), fix = budItems("Fixed"), caps = budItems("Category");
-    var carry = carryIn(state.offset);
+    var ci = carryIn(state.offset), carry = ci.amt;
     var incT = cycSum(inc, sy), fixT = cycSum(fix, sy), avail = incT - fixT - carry;
     var pending = inc.concat(fix).filter(function(b){ return b.variable && !cycAmt(b, sy).real; });
     var incEst = inc.some(function(b){ return b.variable && !cycAmt(b, sy).real; });
@@ -1217,15 +1266,22 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       if (state.offset === 0 && !over) top.appendChild(el("div", "mhint", "เหลือ " + daysLeftN + " วัน · ใช้ได้วันละ ฿" + fmt(left / daysLeftN)));
       var fl = el("div", "flow");
       var lines = [["inc", "รายรับ", "฿" + fmt(incT)], ["fix", "หัก ค่าใช้จ่ายคงที่", "−฿" + fmt(fixT)]];
-      if (carry > 0.004) lines.push(["carry", "หัก ยกยอดเกินจากรอบก่อน", "−฿" + fmt(carry)]);
+      var showCarry = carry > 0.004 || ci.manual;
+      if (showCarry) lines.push(["carry", "หัก ยกยอดจากรอบก่อน", "−฿" + fmt(carry)]);
       lines.push(["eq", "งบใช้จ่าย", "฿" + fmt(avail)]);
       lines.forEach(function(x){
-        var d = el("div", x[0] === "eq" ? "eq" : null), lb0 = el("span", x[0] === "eq" ? null : "lead", x[1]);
+        var d = el(x[0] === "carry" ? "button" : "div", x[0] === "eq" ? "eq" : x[0] === "carry" ? "cline" : null), lb0 = el("span", x[0] === "eq" ? null : "lead", x[1]);
         if (x[0] === "inc") { lb0.appendChild(incEye()); if (incEst) lb0.appendChild(el("small", "est", "ประมาณการ")); }
         if (x[0] === "fix" && fix.some(function(b){ return b.variable && !cycAmt(b, sy).real; })) lb0.appendChild(el("small", "est", "ประมาณการ"));
+        if (x[0] === "carry") { if (ci.manual) lb0.appendChild(el("small", "est", "แก้เอง")); d.type = "button"; d.onclick = function(){ openCarryEditor(sy, ci); }; }
         d.appendChild(lb0); d.appendChild(el("span", x[0] === "inc" || x[0] === "eq" ? "tot inc" : "tot", x[2])); fl.appendChild(d);
       });
-      if (carry > 0.004) fl.appendChild(el("div", "mhint", "รอบก่อนใช้เกินงบ เงินเดือนรอบนี้ต้องกันไปโปะส่วนนั้นก่อน (นับย้อนไม่เกิน " + CARRY_CYCLES + " รอบ เฉพาะยอดที่เกิน)"));
+      if (ci.manual) fl.appendChild(el("div", "mhint", "ใส่ยอดยกมาเอง (แอปคำนวณได้ ฿" + fmt(ci.computed) + ") · แตะบรรทัดยกยอดเพื่อแก้"));
+      else if (carry > 0.004) fl.appendChild(el("div", "mhint", "รอบก่อนใช้เกินงบ เงินเดือนรอบนี้ต้องกันไปโปะส่วนนั้นก่อน (นับย้อนไม่เกิน " + CARRY_CYCLES + " รอบ เฉพาะยอดที่เกิน) · แตะเพื่อแก้ถ้าไม่ตรงกับหนี้ที่ต้องโปะจริง"));
+      if (!showCarry && state.offset <= 0) {
+        var ac = el("button", "cline add", "ใส่ยอดยกมาจากรอบก่อนเอง"); ac.type = "button";
+        ac.onclick = function(){ openCarryEditor(sy, ci); }; fl.appendChild(ac);
+      }
       top.appendChild(fl);
     }
     body.appendChild(top);
@@ -1241,7 +1297,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       capped[c.name] = true;
       var used = byCat[c.name] || 0, ov = used > c.amt + 0.004;
       var w = el("button", "cat btn"), row = el("div", "row");
-      var cl = el("span"); cl.appendChild(catIconEl(c.name)); cl.appendChild(document.createTextNode(c.name)); row.appendChild(cl);
+      var cl = el("span"); cl.appendChild(catIconEl(c.name)); cl.appendChild(document.createTextNode(c.name));
+      var cg = catGroup(c.name);
+      if (cg) { var gb = el("i", "gbadge", cg); gb.style.setProperty("--g", groupColor(cg)); cl.appendChild(gb); }
+      row.appendChild(cl);
       row.appendChild(el("span", "tot", "฿" + fmt(used) + " / ฿" + fmt(c.amt)));
       var t2 = el("div", "track"), f2 = el("div", "fill" + (ov ? " over" : "")); f2.style.width = Math.min(100, Math.max(used > 0 ? 2 : 0, used / (c.amt || 1) * 100)) + "%";
       t2.appendChild(f2); w.appendChild(row); w.appendChild(t2);
@@ -1258,7 +1317,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 
     budList(body, "Income", "money", incT, sy);
     budList(body, "Fixed", "receipt", fixT, sy);
-    body.appendChild(el("div", "mhint", "รายการใน Data ที่ชื่อตรงกับค่าใช้จ่ายคงที่ (เช่น Netflix ที่ตัดบัตร) ไม่นับซ้ำในยอดใช้ไป · รายการที่หารกับคนอื่นนับเฉพาะส่วนของเรา"));
+    body.appendChild(el("div", "mhint", "รายการใน Data ที่ชื่อตรงกับค่าใช้จ่ายคงที่ หรือมีคำค้นที่ตั้งไว้ (เช่น Netflix ที่ตัดบัตร) ไม่นับซ้ำในยอดใช้ไป · รายการที่หารกับคนอื่นนับเฉพาะส่วนของเรา"));
   }
   // Cashflow split of this cycle's income: each group = its Fixed items + what was spent in its categories.
   // Overspend carried in from earlier cycles also comes out of this income; it stays in its own grey line because
@@ -1283,7 +1342,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     GROUPS.forEach(function(g){ line(g[2], g[1], t[g[0]]); });
     if (none > 0.004) line("repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 4px)", "ยังไม่จัดกลุ่ม", none, "muted");
-    if (carry > 0.004) line("var(--muted)", "ยกยอดเกินจากรอบก่อน", carry, "muted");
+    if (carry > 0.004) line("var(--muted)", "ยกยอดจากรอบก่อน", carry, "muted");
     if (left >= 0) { var r0 = el("div", "crow2 muted"), l0 = el("span"), d0 = el("i", "gdot hollow"); l0.appendChild(d0); l0.appendChild(document.createTextNode("ยังไม่ได้ใช้")); r0.appendChild(l0); r0.appendChild(el("span", "tot inc", "฿" + fmt(left) + " · " + Math.round(left / (incT || 1) * 100) + "%")); sec.appendChild(r0); }
     else sec.appendChild(el("div", "crow2 over", "ใช้เกินรายรับ ฿" + fmt(-left)));
     if (none > 0.004) sec.appendChild(el("div", "mhint", "หมวดและค่าใช้จ่ายคงที่ที่ยังไม่มีกลุ่มนับรวมใน ยังไม่จัดกลุ่ม · ค่าใช้จ่ายคงที่ตั้งกลุ่มได้ในหน้าแก้รายการ"));
@@ -1391,7 +1450,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     sync(b); return b;
   }
   function openBudgetEditor(type, b){
-    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "", group: b ? b.group : "" };
+    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "", group: b ? b.group : "", match: b ? (b.match || []).join(", ") : "" };
     var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtAmt(act.amt) : "" };
     var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + b.name : b.name);
     openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
@@ -1433,6 +1492,20 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         });
         gc.appendChild(cg); gc._hint("ใช้แค่จัดกลุ่มและไอคอน ไม่นับรวมกับงบหมวด"); box.appendChild(gc);
         box.appendChild(groupPicker(f));
+        // Match words, with the rows they catch in the cycle on screen so a too-wide word shows up at once.
+        var gm = group("คำค้นสำหรับจับคู่รายการบัตร"), mi = el("input", "txt"); mi.placeholder = "เช่น claude หรือ mea, การไฟฟ้า"; mi.maxLength = 100; mi.autocomplete = "off";
+        mi.value = f.match; gm.appendChild(mi);
+        var hits = el("div", "h"); gm.appendChild(hits);
+        var showHits = function(){
+          var words = matchWords(mi.value), nm = (f.name || "").trim().toLowerCase();
+          var rows = (state.rows || []).filter(function(r){
+            var n = r.name.trim().toLowerCase();
+            return r.date >= sy.start && r.date <= sy.end && ((nm && n === nm) || words.some(function(w){ return n.indexOf(w) >= 0; }));
+          });
+          hits.textContent = "ไม่ต้องตั้งชื่อรายการบัตรให้ตรง คั่นหลายคำด้วย , · " + (rows.length ? "รอบนี้จับคู่ได้ " + rows.length + " รายการ: " + rows.slice(0, 4).map(function(r){ return r.name + " ฿" + fmt(myShare(r)); }).join(", ") + (rows.length > 4 ? " …" : "") : "รอบนี้ยังไม่เจอรายการที่จับคู่ได้");
+        };
+        mi.oninput = function(){ f.match = mi.value; showHits(); }; showHits();
+        box.appendChild(gm);
       }
       if (!isNew && b.variable) {
         var ga = group("ยอดจริงรอบ " + dm(sy.start) + " – " + dm(sy.end)), aci = el("input", "txt amtin"); aci.inputMode = "decimal"; aci.placeholder = "ยังไม่ได้ใส่ (ใช้ยอดปกติ)"; aci.autocomplete = "off";
@@ -1451,7 +1524,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var amt = num(f.amt);
       if (!f.name) { $("itemMsg").textContent = type === "Category" ? "เลือกหมวดก่อน" : "ใส่ชื่อก่อน"; return; }
       if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
-      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : "", group: type === "Fixed" ? f.group : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
+      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : "", group: type === "Fixed" ? f.group : "", match: type === "Fixed" ? f.match : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
       var actNew = num(f2.actual), actChanged = !isNew && b.variable && actNew > 0 && !(act.real && Math.abs(actNew - act.amt) < 0.005);
       if (!actChanged) { saveItem("saveBudget", arg, done); return; }
       // Actual first, then the row itself; saveItem reloads once both are in.
