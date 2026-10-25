@@ -453,6 +453,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .me-row .amt{font-size:18px}
 .glist.bycard{margin:-4px 0 12px}
 .glist.bycard .grow-row{min-height:52px}
+.ocard{display:flex;align-items:center;gap:10px;margin:18px 0 4px;font-size:14px;font-weight:600}
+.ocard:first-of-type{margin-top:6px}
+.ocard .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ocard small{flex:none;color:var(--muted);font-weight:500;font-size:13px}
 /* ---- Light / dark switch: the whole page cross-fades (View Transitions), with a colour-transition fallback ---- */
 :root{color-scheme:light}
 :root[data-theme="dark"]{color-scheme:dark}
@@ -1119,9 +1123,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     if (cards.length > 1) {
       var bc = el("div", "glist bycard");
       cards.forEach(function(c){
-        var r = el("div", "grow-row"); r.appendChild(cardThumb(c, "cc"));
+        var r = el("button", "grow-row"); r.appendChild(cardThumb(c, "cc"));
         var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, c)); t.appendChild(nm); r.appendChild(t);
-        r.appendChild(el("div", "amt tot", "฿" + fmt(mine.byCard[c]))); bc.appendChild(r);
+        r.appendChild(el("div", "amt tot", "฿" + fmt(mine.byCard[c]))); r.appendChild(el("span", "chev"));
+        r.onclick = function(){ openOwe(ME, c); }; bc.appendChild(r);
       });
       body.appendChild(bc);
     }
@@ -2034,37 +2039,53 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 
   // ---------- Who owes me: every unsettled share of one person, across all cycles ----------
   // Items listed when the panel opened stay listed after being ticked, so a mis-tap can be un-ticked.
-  var owePerson = null, oweKeys = null;
+  // Mine can be narrowed to one card (oweCard), from the by-card rows on the ค้างจ่าย page.
+  var owePerson = null, oweKeys = null, oweCard = null;
   function oweItems(){
-    if (owePerson === ME) return (state.rows || []).map(myEntry).filter(function(e){ return e && e.amt > 0.004; });
+    if (owePerson === ME) return (state.rows || []).map(myEntry).filter(function(e){ return e && e.amt > 0.004 && (!oweCard || e.r.card === oweCard); });
     var out = [];
     (state.rows || []).forEach(function(r){ (r.parts || []).forEach(function(p, idx){
       if (!isMe(p) && p.name === owePerson && p.amt) out.push({ r: r, p: p, idx: idx, key: r.row + "|" + idx });
     }); });
     return out;
   }
-  function openOwe(name){
-    owePerson = name; oweKeys = {};
+  function openOwe(name, card){
+    owePerson = name; oweCard = card || null; oweKeys = {};
     oweItems().forEach(function(it){ if (!(it.p ? it.p.done : it.done)) oweKeys[it.key] = 1; });
     renderOwe(); showSheet("oweSheet");
   }
-  function closeOwe(){ owePerson = null; hideSheet("oweSheet"); }
+  function closeOwe(){ owePerson = oweCard = null; hideSheet("oweSheet"); }
   function renderOwe(){
     if (!owePerson) return;
     var items = oweItems().filter(function(it){ return oweKeys[it.key]; }).sort(function(a, b){ return b.r.date - a.r.date || b.r.row - a.r.row; });
     var isMeSheet = owePerson === ME;
     var left = items.filter(function(it){ return !(isMeSheet ? it.done : it.p.done); }).reduce(function(a, it){ return a + (isMeSheet ? it.amt : it.p.amt); }, 0);
-    $("oweTitle").textContent = isMeSheet ? "ของเรา ต้องเตรียม ฿" + fmt(left) : owePerson + " ค้าง ฿" + fmt(left);
+    $("oweTitle").textContent = isMeSheet ? (oweCard || "ของเรา") + " ต้องเตรียม ฿" + fmt(left) : owePerson + " ค้าง ฿" + fmt(left);
     var box = $("oweBody"); box.textContent = "";
     var h = el("h2", null, items.length + " รายการ"); h.appendChild(el("small", null, isMeSheet ? "แตะยอดเมื่อโยกเงินไปพักแล้ว (เป็น Paid)" : "แตะยอดเพื่อสลับว่าจ่ายคืนแล้วหรือยัง")); box.appendChild(h);
     if (!items.length) { box.appendChild(el("div", "empty", "ไม่มีรายการค้าง")); return; }
+    // Mine, all cards: one section per card, biggest first. Ordered by everything listed (ticked too),
+    // so a section doesn't jump while its items are being ticked off.
+    var byCard = isMeSheet && !oweCard;
+    if (byCard) {
+      var groups = {};
+      items.forEach(function(it){ var g = groups[it.r.card] || (groups[it.r.card] = { all: 0, left: 0, items: [] }); g.items.push(it); g.all += it.amt; if (!it.done) g.left += it.amt; });
+      items = [];
+      Object.keys(groups).sort(function(a, b){ return groups[b].all - groups[a].all; }).forEach(function(c){
+        items.push({ head: c, g: groups[c] }); items = items.concat(groups[c].items);
+      });
+    }
     items.forEach(function(it){
+      if (it.head) {
+        var oh = el("div", "ocard"); oh.appendChild(cardThumb(it.head, "cthumb")); oh.appendChild(el("span", "nm", it.head));
+        oh.appendChild(el("small", "tot", it.g.items.length + " รายการ · ฿" + fmt(it.g.left))); box.appendChild(oh); return;
+      }
       var r = it.r, tx = el("div", "tx");
       tx.style.cursor = "default";
       tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
-      l.appendChild(metaLine("div", "note", [dshort(r.date) + " " + r.date.getFullYear(), r.card ? cardChip(r.card) : "", isMeSheet && !it.split ? "" : "ทั้งบิล ฿" + fmt(r.cost)]));
+      l.appendChild(metaLine("div", "note", [dshort(r.date) + " " + r.date.getFullYear(), r.card && !isMeSheet ? cardChip(r.card) : "", isMeSheet && !it.split ? "" : "ทั้งบิล ฿" + fmt(r.cost)]));
       tx.appendChild(l);
       var rt = el("div", "rt"), done = isMeSheet ? it.done : it.p.done, amt = isMeSheet ? it.amt : it.p.amt;
       var pb = el("button", "part" + (done ? " done" : ""), "฿" + fmtAmt(amt) + (done ? " ✓" : ""));
