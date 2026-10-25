@@ -517,6 +517,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .pchip{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line-mid);white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .pchip.on{background:var(--paid-soft);color:var(--paid);box-shadow:none}
 .pchip:disabled{opacity:.6}
+.pchip.card{background:var(--pending-soft);color:var(--pending);box-shadow:none}
 .gdot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%}
 .chip .gdot{margin-right:-2px}
 .gdot.hollow{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
@@ -1405,7 +1406,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var isFix = type === "Fixed", shown = budItems(type);
     // Fixed: a checklist for this cycle, so the heading counts what is ticked and what is still to pay.
     var nPaid = 0, leftT = 0;
-    if (isFix) shown.forEach(function(b){ if (cycRec(b, sy).paidOn) nPaid++; else leftT += cycAmt(b, sy).amt; });
+    if (isFix) shown.forEach(function(b){ if (fixedState(b, sy).paid) nPaid++; else leftT += cycAmt(b, sy).amt; });
     lb.appendChild(ld);
     var paidLine = shown.length ? "จ่ายแล้ว " + nPaid + "/" + shown.length + (leftT > 0.004 ? " · เหลือ ฿" + fmt(leftT) : " · ครบแล้ว") : "";
     lb.appendChild(el("small", isInc ? "tot inc" : "tot", isFix && envs ? "฿" + fmt(envs.total) + " / เดือน" : isFix ? paidLine : "฿" + fmt(total) + " / เดือน"));
@@ -1442,9 +1443,27 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   // "จ่ายแล้ว" chip on a Fixed row: ticks it off for this salary cycle. A variable item still on its estimate asks for
   // the real amount first, so paying and confirming the figure is one step.
+  // A Fixed item charged to a card follows its matched card rows in the cycle: all Paid = paid, any still Pending =
+  // "ตัดบัตรแล้ว" (charged, money not moved aside yet). Items paid by transfer have no rows and are ticked by hand.
+  function fixedState(b, sy){
+    var rows = (state.rows || []).filter(function(r){ return r.date >= sy.start && r.date <= sy.end && fixedFor(r) === b; });
+    var manual = !!cycRec(b, sy).paidOn, pend = rows.filter(function(r){ return !isPaid(r); }).length;
+    return { rows: rows, manual: manual, paid: manual || (rows.length > 0 && !pend), charged: !manual && pend > 0 };
+  }
   var payBusy = false;
   function paidChip(b, sy){
-    var paid = !!cycRec(b, sy).paidOn, c = el("button", "pchip" + (paid ? " on" : ""), paid ? "จ่ายแล้ว ✓" : "ยังไม่จ่าย");
+    var fs = fixedState(b, sy);
+    if (!fs.manual && fs.rows.length) {
+      // Driven by the card rows; changing it here would disagree with the รายการ tab, so a tap only explains.
+      var a = el("button", "pchip " + (fs.paid ? "on" : "card"), fs.paid ? "จ่ายแล้ว ✓" : "ตัดบัตรแล้ว");
+      a.type = "button"; a.title = "ตามรายการบัตร";
+      a.onclick = function(ev){
+        ev.stopPropagation();
+        showToast(fs.paid ? "รายการบัตรของ " + b.name + " เป็น Paid แล้ว" : "รายการบัตรของ " + b.name + " ยังเป็น Pending · กด Paid ที่หน้ารายการ");
+      };
+      return a;
+    }
+    var paid = fs.manual, c = el("button", "pchip" + (paid ? " on" : ""), paid ? "จ่ายแล้ว ✓" : "ยังไม่จ่าย");
     c.type = "button"; c.setAttribute("aria-pressed", String(paid));
     c.title = paid ? "จ่ายเมื่อ " + dm(cycRec(b, sy).paidOn) + " · แตะเพื่อยกเลิก" : "แตะเมื่อจ่ายแล้ว";
     c.onclick = function(ev){
