@@ -26,6 +26,7 @@
   --bg:#f4f6f8;--surface:#ffffff;--text:#0f172a;--muted:#6b7684;--line:#e6eaef;
   --accent:#12a150;--on-accent:#ffffff;
   --paid:#12a150;--paid-soft:#e6f6ec;--pending:#e58a00;--pending-soft:#fff3de;--bar:#12a150;
+  --g-life:#3b82f6;--g-soul:#db2777;--g-future:#7c3aed;
   --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.05);
   --font:"Poppins","IBM Plex Sans Thai",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
 }
@@ -34,6 +35,7 @@
     --bg:#061316;--surface:#0d2024;--text:#ecfbf6;--muted:#82a09f;--line:#183135;
     --accent:#3ed68b;--on-accent:#04140c;
     --paid:#3ed68b;--paid-soft:#103427;--pending:#f2a93b;--pending-soft:#33260f;--bar:#3ed68b;
+    --g-life:#60a5fa;--g-soul:#f472b6;--g-future:#a78bfa;
     --shadow:none;
   }
 }
@@ -41,6 +43,7 @@
   --bg:#061316;--surface:#0d2024;--text:#ecfbf6;--muted:#82a09f;--line:#183135;
   --accent:#3ed68b;--on-accent:#04140c;
   --paid:#3ed68b;--paid-soft:#103427;--pending:#f2a93b;--pending-soft:#33260f;--bar:#3ed68b;
+  --g-life:#60a5fa;--g-soul:#f472b6;--g-future:#a78bfa;
   --shadow:none;
 }
 *{box-sizing:border-box}
@@ -508,6 +511,18 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .pchip{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line-mid);white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .pchip.on{background:var(--paid-soft);color:var(--paid);box-shadow:none}
 .pchip:disabled{opacity:.6}
+.gdot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%}
+.chip .gdot{margin-right:-2px}
+.gdot.hollow{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.grow-row .txt b .gdot{width:7px;height:7px}
+.cbar{display:flex;gap:2px;height:10px;border-radius:99px;overflow:hidden;background:var(--line);margin-bottom:12px}
+.cbar i{display:block;height:100%}
+.crow2{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;padding:4px 0;font-variant-numeric:tabular-nums}
+.crow2>span:first-child{display:flex;align-items:center;gap:8px;font-weight:500}
+.crow2>span:last-child{white-space:nowrap}
+.crow2.muted{color:var(--muted)}
+.crow2.muted>span:first-child{font-weight:400}
+.crow2.over{color:var(--pending);font-weight:600}
 .inc{transition:filter .35s ease,opacity .35s ease}
 .inc-hidden .inc{filter:blur(.32em);opacity:.8;user-select:none;-webkit-user-select:none}
 .blabel .lead,.flow .lead{display:flex;align-items:center;gap:4px}
@@ -781,13 +796,29 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     return Object.keys(c).length ? { days: c, hidden: h } : null;
   }
-  // Categories tab: A=Category, B=Icon, C=Hidden. null (no tab) = the built-in list below.
+  // Cashflow groups: every category (Categories!D) and Fixed item (Budget!H) can belong to one.
+  var GROUPS = [["Life", "Life", "var(--g-life)"], ["Soul", "Soul", "var(--g-soul)"], ["Future", "Future", "var(--g-future)"]];
+  function groupOf(v){ v = String(v || "").trim().toLowerCase(); var g = GROUPS.filter(function(x){ return x[0].toLowerCase() === v; })[0]; return g ? g[0] : ""; }
+  function groupColor(g){ var x = GROUPS.filter(function(y){ return y[0] === g; })[0]; return x ? x[2] : "var(--line-mid)"; }
+  function catGroup(name){ var c = (state.cats || []).filter(function(x){ return x.name === name; })[0]; return c ? c.group : ""; }
+  function groupPicker(f){
+    var g = group("กลุ่ม Cashflow"), row = el("div", "chips");
+    [["", "ไม่ระบุ", null]].concat(GROUPS).forEach(function(o){
+      var c = el("button", "chip"); c.type = "button";
+      if (o[2]) { var d = el("i", "gdot"); d.style.background = o[2]; c.appendChild(d); }
+      c.appendChild(document.createTextNode(o[1])); c.setAttribute("aria-pressed", String((f.group || "") === o[0]));
+      c.onclick = function(){ f.group = o[0]; [].forEach.call(row.children, function(y){ y.setAttribute("aria-pressed", String(y === c)); }); };
+      row.appendChild(c);
+    });
+    g.appendChild(row); return g;
+  }
+  // Categories tab: A=Category, B=Icon, C=Hidden, D=Group (Life/Soul/Future). null (no tab) = the built-in list below.
   function parseCats(values){
     if (!values) return null;
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [];
-      if (String(r[0] || "").trim()) out.push({ name: String(r[0]).trim(), icon: String(r[1] || "").trim(), hidden: isYes(r[2]) });
+      if (String(r[0] || "").trim()) out.push({ name: String(r[0]).trim(), icon: String(r[1] || "").trim(), hidden: isYes(r[2]), group: groupOf(r[3]) });
     }
     return out;
   }
@@ -1093,7 +1124,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     body.appendChild(el("div", "mhint", "แตะชื่อเพื่อติ๊กว่าคืนแล้ว"));
   }
 
-  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable, G=Category ----------
+  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden, F=Variable, G=Category, H=Group ----------
   // Variable items (salary that moves a little, electricity) use C as the estimate until the real figure for a salary
   // cycle is confirmed; that lands in the Actual sheet: A=Cycle start (dd/mm/yyyy), B=Name, C=Amount (blank = usual),
   // D=Paid on (Fixed items ticked off for that cycle).
@@ -1104,7 +1135,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [], type = String(r[0] || "").trim(), name = String(r[1] || "").trim();
-      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim() });
+      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim(), group: groupOf(r[7]) });
     }
     return out;
   }
@@ -1173,6 +1204,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     body.appendChild(top);
 
+    if (inc.length) renderCashflow(body, fix, byCat, incT, sy);
+
     // Category caps; spending in categories without a cap is summed on one line.
     var cs = el("div", "sec"), ch = el("h2", null, "งบตามหมวด"), capT = budSum(caps);
     if (inc.length && caps.length) ch.appendChild(el("small", "tot inc", "ยังไม่ได้แบ่ง ฿" + fmt(avail - capT)));
@@ -1200,6 +1233,34 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     budList(body, "Income", "money", incT, sy);
     budList(body, "Fixed", "receipt", fixT, sy);
     body.appendChild(el("div", "mhint", "รายการใน Data ที่ชื่อตรงกับค่าใช้จ่ายคงที่ (เช่น Netflix ที่ตัดบัตร) ไม่นับซ้ำในยอดใช้ไป · รายการที่หารกับคนอื่นนับเฉพาะส่วนของเรา"));
+  }
+  // Cashflow split of this cycle's income: each group = its Fixed items + what was spent in its categories.
+  function renderCashflow(body, fix, byCat, incT, sy){
+    var t = { Life: 0, Soul: 0, Future: 0 }, none = 0;
+    fix.forEach(function(b){ var a = cycAmt(b, sy).amt; if (b.group) t[b.group] += a; else none += a; });
+    Object.keys(byCat).forEach(function(k){ var g = catGroup(k); if (g) t[g] += byCat[k]; else none += byCat[k]; });
+    var used = t.Life + t.Soul + t.Future + none, left = incT - used, base = Math.max(incT, used) || 1;
+    var sec = el("div", "sec cflow"), h = el("h2", null, "สัดส่วน Cashflow"); h.appendChild(el("small", "tot inc", "ของรายรับ ฿" + fmt(incT))); sec.appendChild(h);
+    var bar = el("div", "cbar");
+    GROUPS.concat([["", "", "var(--muted)"]]).forEach(function(g){
+      var v = g[0] ? t[g[0]] : none; if (v <= 0) return;
+      var s = el("i"); s.style.width = (v / base * 100) + "%"; s.style.background = g[0] ? g[2] : "repeating-linear-gradient(45deg,var(--line-mid) 0 3px,transparent 3px 6px)"; bar.appendChild(s);
+    });
+    sec.appendChild(bar);
+    function line(color, label, v, cls){
+      var r = el("div", "crow2" + (cls ? " " + cls : "")), l = el("span"), d = el("i", "gdot"); d.style.background = color;
+      l.appendChild(d); l.appendChild(document.createTextNode(label)); r.appendChild(l);
+      var a = el("span", "tot"); a.appendChild(document.createTextNode("฿" + fmt(v) + " · ")); a.appendChild(el("span", "inc", Math.round(v / (incT || 1) * 100) + "%")); r.appendChild(a);
+      sec.appendChild(r);
+    }
+    GROUPS.forEach(function(g){ line(g[2], g[1], t[g[0]]); });
+    if (none > 0.004) line("var(--muted)", "ยังไม่จัดกลุ่ม", none, "muted");
+    if (left >= 0) { var r0 = el("div", "crow2 muted"), l0 = el("span"), d0 = el("i", "gdot hollow"); l0.appendChild(d0); l0.appendChild(document.createTextNode("ยังไม่ได้ใช้")); r0.appendChild(l0); r0.appendChild(el("span", "tot inc", "฿" + fmt(left) + " · " + Math.round(left / (incT || 1) * 100) + "%")); sec.appendChild(r0); }
+    else sec.appendChild(el("div", "crow2 over", "ใช้เกินรายรับ ฿" + fmt(-left)));
+    if (none > 0.004) sec.appendChild(el("div", "mhint", "หมวดและค่าใช้จ่ายคงที่ที่ยังไม่มีกลุ่มนับรวมใน ยังไม่จัดกลุ่ม · ค่าใช้จ่ายคงที่ตั้งกลุ่มได้ในหน้าแก้รายการ"));
+    var gb = el("button", "bud-add"); gb.innerHTML = phSvg("tag"); gb.appendChild(document.createTextNode("ตั้งกลุ่มให้หมวด"));
+    gb.onclick = openCatMgr; sec.appendChild(gb);
+    body.appendChild(sec);
   }
   // "ยืนยันยอดรอบนี้": one row per variable item still on its estimate, prefilled so a match is one tap.
   var confirmBusy = false;
@@ -1246,7 +1307,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var ic;
       if (b.cat) ic = catIconEl(b.cat, "icsq"); else { ic = el("span", "phw icsq"); ic.innerHTML = phSvg(icon); }
       r.appendChild(ic);
-      var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, b.name)); t.appendChild(nm);
+      var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, b.name));
+      if (isFix && b.group) { var gd = el("i", "gdot"); gd.style.background = groupColor(b.group); gd.title = b.group; nm.appendChild(gd); }
+      t.appendChild(nm);
       var ca = cycAmt(b, sy), st = b.hidden ? "ซ่อนไว้ ไม่นับ" : b.variable ? (ca.real ? (state.offset === 0 ? "ยอดจริงรอบนี้" : "ยอดจริง") : "ประมาณการ · รอยอดจริง") : b.note;
       var sub = [isFix ? b.cat : "", st].filter(Boolean).join(" · ");
       if (sub) t.appendChild(el("small", b.variable && !b.hidden && !ca.real ? "est-t" : null, sub)); r.appendChild(t);
@@ -1299,7 +1362,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     sync(b); return b;
   }
   function openBudgetEditor(type, b){
-    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "" };
+    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "", group: b ? b.group : "" };
     var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtAmt(act.amt) : "" };
     var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + b.name : b.name);
     openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
@@ -1340,6 +1403,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
           cg.appendChild(c);
         });
         gc.appendChild(cg); gc._hint("ใช้แค่จัดกลุ่มและไอคอน ไม่นับรวมกับงบหมวด"); box.appendChild(gc);
+        box.appendChild(groupPicker(f));
       }
       if (!isNew && b.variable) {
         var ga = group("ยอดจริงรอบ " + dm(sy.start) + " – " + dm(sy.end)), aci = el("input", "txt amtin"); aci.inputMode = "decimal"; aci.placeholder = "ยังไม่ได้ใส่ (ใช้ยอดปกติ)"; aci.autocomplete = "off";
@@ -1358,7 +1422,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var amt = num(f.amt);
       if (!f.name) { $("itemMsg").textContent = type === "Category" ? "เลือกหมวดก่อน" : "ใส่ชื่อก่อน"; return; }
       if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
-      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
+      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : "", group: type === "Fixed" ? f.group : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
       var actNew = num(f2.actual), actChanged = !isNew && b.variable && actNew > 0 && !(act.real && Math.abs(actNew - act.amt) < 0.005);
       if (!actChanged) { saveItem("saveBudget", arg, done); return; }
       // Actual first, then the row itself; saveItem reloads once both are in.
@@ -2339,7 +2403,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     if (mgrTab.catMgr === "off") box.appendChild(el("div", "mhint", "หมวดที่ซ่อนไม่อยู่ในตัวเลือก รายการเก่ายังนับในหมวดเดิม"));
   }
   function openCatEditor(c){
-    var isNew = !c, f = { name: c ? c.name : "", icon: c ? catIcon(c.name) : "tag", hidden: !!(c && c.hidden) };
+    var isNew = !c, f = { name: c ? c.name : "", icon: c ? catIcon(c.name) : "tag", hidden: !!(c && c.hidden), group: c ? c.group : "" };
     openItem(isNew ? "เพิ่มหมวด" : c.name, isNew ? "เพิ่มหมวด" : "บันทึก", function(b){
       // Preview = the row exactly as the list shows it, with this category's real numbers.
       var rows = isNew ? [] : catRows(f.name), total = rows.reduce(function(a, r){ return a + r.cost; }, 0);
@@ -2358,6 +2422,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       CAT_ICONS.forEach(function(n){ var x = el("button"); x.type = "button"; x.dataset.n = n; x.setAttribute("aria-label", n); x.innerHTML = phSvg(n); x.onclick = function(){ pick(n); }; grid.appendChild(x); });
       g2.appendChild(grid); b.appendChild(g2);
       if (isIcon(f.icon)) pick(f.icon); else g2._hint("ตอนนี้เป็นอีโมจิ เลือกไอคอนด้านบนเพื่อเปลี่ยน");
+      var gg = groupPicker(f); gg._hint("รายการในหมวดนี้นับเข้ากลุ่มนี้ในการ์ด สัดส่วน Cashflow"); b.appendChild(gg);
       if (!isNew) {
         var g3 = group(), sr = el("div", "swrow"), st = el("div", "txt");
         st.appendChild(el("b", null, "แสดงในตัวเลือก")); st.appendChild(el("small", null, "ปิดเมื่อไม่ใช้หมวดนี้ รายการเก่ายังนับในหมวดเดิม"));
@@ -2365,7 +2430,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       }
     }, function(){
       if (isNew && !f.name) { $("itemMsg").textContent = "ใส่ชื่อหมวดก่อน"; return; }
-      saveItem("saveCategory", { name: f.name, icon: f.icon, hidden: f.hidden, isNew: isNew }, isNew ? "เพิ่มหมวด " + f.name + " แล้ว" : "บันทึก " + f.name + " แล้ว");
+      saveItem("saveCategory", { name: f.name, icon: f.icon, hidden: f.hidden, group: f.group || "", isNew: isNew }, isNew ? "เพิ่มหมวด " + f.name + " แล้ว" : "บันทึก " + f.name + " แล้ว");
     });
   }
 
