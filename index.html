@@ -310,7 +310,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 :root{--tabbar-h:58px}
 .fab[hidden]{display:none}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:25;padding-bottom:env(safe-area-inset-bottom,0px);background:var(--surface);box-shadow:0 -1px 0 var(--line)}
-.tabbar .in{max-width:560px;margin:0 auto;height:var(--tabbar-h);display:grid;grid-template-columns:repeat(3,1fr)}
+.tabbar .in{max-width:560px;margin:0 auto;height:var(--tabbar-h);display:grid;grid-template-columns:repeat(4,1fr)}
 .tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;font-size:11px;font-weight:500;color:var(--muted);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .tabbar button i{display:block;font-style:normal}
 .tabbar button[aria-current="page"]{color:var(--text);font-weight:600}
@@ -467,6 +467,33 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .grow-row.dragging{z-index:2;background:var(--surface);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.08),0 14px 28px rgba(0,0,0,.14);transition:none!important;cursor:grabbing}
 .grow-row.dragging.settle{transition:transform .16s cubic-bezier(.32,.72,0,1)!important}
 .grow-row.dragging .drag{color:var(--accent);cursor:grabbing}
+/* ---- งบ tab: income − fixed = what this salary cycle may spend; category caps under it ---- */
+.bud-top .lbl{font-size:12.5px;color:var(--muted);font-weight:500}
+.bud-top .big{font-size:32px;font-weight:600;letter-spacing:-.03em;line-height:1.15;margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.bud-top .big.over{color:var(--pending)}
+.bud-top .track{position:relative;height:10px}
+.track .pace{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--text);opacity:.35}
+.fill.over{background:var(--pending)}
+.bud-top .leg{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.flow{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px}
+.flow div{display:flex;justify-content:space-between;padding:3px 0;font-variant-numeric:tabular-nums}
+.flow div span:first-child{color:var(--muted)}
+.flow div.eq{font-weight:600;border-top:1px dashed var(--line-mid);margin-top:4px;padding-top:7px}
+.flow div.eq span:first-child{color:var(--text)}
+.blabel{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:600;margin:18px 4px 8px}
+.blabel small{font-size:12px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.cat.btn{display:block;width:100%;padding:0;text-align:left;color:inherit}
+.cat .dl.over{color:var(--pending)}
+.unbud{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding-top:10px;border-top:1px solid var(--line);margin-top:4px;font-variant-numeric:tabular-nums}
+.bud-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;font-size:13.5px;font-weight:600;color:var(--accent)}
+.bud-add .phi{width:17px;height:17px}
+.grow-row.off{opacity:.5}
+.amtin{font-variant-numeric:tabular-nums}
+.inc{transition:filter .35s ease,opacity .35s ease}
+.inc-hidden .inc{filter:blur(.32em);opacity:.8;user-select:none;-webkit-user-select:none}
+.blabel .lead,.flow .lead{display:flex;align-items:center;gap:4px}
+.inc-eye{display:grid;place-items:center;width:30px;height:30px;margin:-8px 0;border-radius:999px;color:var(--muted)}
+.inc-eye .phi{width:18px;height:18px}
 </style>
 </head>
 <body>
@@ -505,6 +532,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   <button data-tab="sum"><i class="off" data-ph="chart-bar"></i><i class="on" data-ph="chart-bar" data-fill></i>สรุป</button>
   <button data-tab="list"><i class="off" data-ph="list-bullets"></i><i class="on" data-ph="list-bullets" data-fill></i>รายการ</button>
   <button data-tab="owe"><i class="off" data-ph="hand-coins"></i><i class="on" data-ph="hand-coins" data-fill></i>ค้างจ่าย</button>
+  <button data-tab="bud"><i data-ph="piggy-bank"></i>งบ</button>
 </div></nav>
 <div class="overlay slide" id="sheet" hidden>
   <div class="panel auto" role="dialog" aria-label="เพิ่มรายการ">
@@ -586,7 +614,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   var OWNER_EMAIL = "kkbnjsth@gmail.com";
   var DEFAULT_CARDS = {}; // real list comes from the Cards tab after sign-in
   try { if (localStorage.getItem("masked")) document.documentElement.classList.add("masked"); } catch (e) {}
-  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [], hidden: {}, cats: null };
+  // Income figures (and the spend budget derived from them) on the งบ tab stay blurred until shown on purpose (separate from the eye in the hero).
+  var incShown = false; try { incShown = !!localStorage.getItem("incShown"); } catch (e) {}
+  if (!incShown) document.documentElement.classList.add("inc-hidden");
+  var state = { filter: "all", rows: null, cards: DEFAULT_CARDS, sel: null, offset: 0, storedAt: null, cash: "Cash", salaryDay: 25, q: "", full: false, wantAll: false, recurring: [], hidden: {}, cats: null, budget: [] };
 
   function $(id){ return document.getElementById(id); }
   function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
@@ -763,6 +794,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       seg.hidden = true; state.swipeCards = null;
       if (!state.full) loadAll(); // Pending rows older than the first ~7 months must count too
       renderOwePage(body); return;
+    }
+    if (tab === "bud") {
+      ["due", "hero", "dots", "cardpick", "searchBox"].forEach(function(id){ $(id).hidden = true; });
+      seg.hidden = true; state.swipeCards = null;
+      renderBudgetPage(body); return;
     }
 
     var names = Object.keys(state.cards);
@@ -950,7 +986,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   function syncTabs(tab){
     [].forEach.call(document.querySelectorAll(".tabbar button"), function(b){ b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false"); });
-    $("fab").hidden = tab === "owe";
+    $("fab").hidden = tab === "owe" || tab === "bud";
   }
   function renderSumTab(body, list, all, isSalary){
     if (state.offset === 0) renderDue(body);
@@ -1036,6 +1072,158 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     });
     body.appendChild(g);
     body.appendChild(el("div", "mhint", "แตะชื่อเพื่อติ๊กว่าคืนแล้ว"));
+  }
+
+  // ---------- งบ tab. Budget sheet: A=Type (Income/Fixed/Category), B=Name, C=Amount, D=Note, E=Hidden ----------
+  // Income − Fixed = what one salary cycle may spend. Spending = my share of every row in the cycle (all cards + cash),
+  // minus rows named like a Fixed item (Netflix on a card is already inside Fixed, so it must not count twice).
+  var BUD_TYPES = { Income: "รายรับ", Fixed: "ค่าใช้จ่ายคงที่", Category: "งบหมวด" };
+  function parseBudget(values){
+    var out = [];
+    for (var i = 1; i < values.length; i++) {
+      var r = values[i] || [], type = String(r[0] || "").trim(), name = String(r[1] || "").trim();
+      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]) });
+    }
+    return out;
+  }
+  function budItems(type, withHidden){ return (state.budget || []).filter(function(b){ return b.type === type && (withHidden || !b.hidden); }); }
+  function budSum(items){ return items.reduce(function(a, b){ return a + b.amt; }, 0); }
+  function myShare(r){ return r.cost - others(r.parts).reduce(function(a, p){ return a + (p.amt || 0); }, 0); }
+  function renderBudgetPage(body){
+    var sy = cycleFor(state.salaryDay, state.offset);
+    $("cyc").hidden = false;
+    $("range").textContent = dstr(sy.start) + " – " + dstr(sy.end);
+    var totalDays = Math.round((sy.end - sy.start) / 86400000) + 1;
+    var elapsed = state.offset < 0 ? totalDays : Math.min(totalDays, Math.max(1, Math.round((today() - sy.start) / 86400000) + 1));
+    $("range").appendChild(el("small", null, (state.offset === 0 ? "รอบเงินเดือนปัจจุบัน" : state.offset === -1 ? "รอบเงินเดือนก่อนหน้า" : "ย้อนหลัง " + (-state.offset) + " รอบ") + " · วันที่ " + elapsed + "/" + totalDays));
+    $("next").disabled = state.offset >= 0;
+
+    var inc = budItems("Income"), fix = budItems("Fixed"), caps = budItems("Category");
+    var incT = budSum(inc), fixT = budSum(fix), avail = incT - fixT;
+    var fixNames = {}; budItems("Fixed", true).forEach(function(b){ fixNames[b.name.toLowerCase()] = true; });
+    var spent = 0, byCat = {};
+    state.rows.forEach(function(r){
+      if (r.date < sy.start || r.date > sy.end || fixNames[r.name.trim().toLowerCase()]) return;
+      var m = myShare(r); spent += m; byCat[r.cat] = (byCat[r.cat] || 0) + m;
+    });
+
+    // Overview: what is left to spend, with a tick at where the cycle is today so pace is visible at a glance.
+    var top = el("div", "sec bud-top");
+    if (!inc.length) {
+      top.appendChild(el("div", "lbl", "ใช้จ่ายรอบนี้"));
+      top.appendChild(el("div", "big", "฿" + fmt(spent)));
+      top.appendChild(el("div", "mhint", "ใส่รายรับกับค่าใช้จ่ายคงที่ด้านล่าง แอปจะคำนวณงบที่ใช้ได้ในแต่ละรอบเงินเดือนให้"));
+    } else {
+      var left = avail - spent, over = left < 0;
+      top.appendChild(el("div", "lbl", over ? "ใช้เกินงบแล้ว" : "ใช้ได้อีก"));
+      top.appendChild(el("div", "big" + (over ? " over" : ""), "฿" + fmt(Math.abs(left))));
+      var tr = el("div", "track"), f = el("div", "fill" + (over ? " over" : ""));
+      f.style.width = Math.min(100, Math.max(spent > 0 ? 2 : 0, spent / (avail || 1) * 100)) + "%"; tr.appendChild(f);
+      if (state.offset === 0) { var pc = el("i", "pace"); pc.style.left = (elapsed / totalDays * 100) + "%"; tr.appendChild(pc); }
+      top.appendChild(tr);
+      var lg = el("div", "leg"); lg.appendChild(el("span", "tot", "ใช้ไป ฿" + fmt(spent))); lg.appendChild(el("span", "tot inc", "งบ ฿" + fmt(avail))); top.appendChild(lg);
+      var daysLeftN = totalDays - elapsed + 1;
+      if (state.offset === 0 && !over) top.appendChild(el("div", "mhint", "เหลือ " + daysLeftN + " วัน · ใช้ได้วันละ ฿" + fmt(left / daysLeftN)));
+      var fl = el("div", "flow");
+      [["รายรับ", "฿" + fmt(incT)], ["หัก ค่าใช้จ่ายคงที่", "−฿" + fmt(fixT)], ["งบใช้จ่าย", "฿" + fmt(avail)]].forEach(function(x, i){
+        var d = el("div", i === 2 ? "eq" : null), lb0 = el("span", i === 0 ? "lead" : null, x[0]);
+        if (i === 0) lb0.appendChild(incEye());
+        d.appendChild(lb0); d.appendChild(el("span", i === 1 ? "tot" : "tot inc", x[1])); fl.appendChild(d);
+      });
+      top.appendChild(fl);
+    }
+    body.appendChild(top);
+
+    // Category caps; spending in categories without a cap is summed on one line.
+    var cs = el("div", "sec"), ch = el("h2", null, "งบตามหมวด"), capT = budSum(caps);
+    if (inc.length && caps.length) ch.appendChild(el("small", "tot inc", "ยังไม่ได้แบ่ง ฿" + fmt(avail - capT)));
+    cs.appendChild(ch);
+    var capped = {};
+    caps.forEach(function(c){
+      capped[c.name] = true;
+      var used = byCat[c.name] || 0, ov = used > c.amt + 0.004;
+      var w = el("button", "cat btn"), row = el("div", "row");
+      var cl = el("span"); cl.appendChild(catIconEl(c.name)); cl.appendChild(document.createTextNode(c.name)); row.appendChild(cl);
+      row.appendChild(el("span", "tot", "฿" + fmt(used) + " / ฿" + fmt(c.amt)));
+      var t2 = el("div", "track"), f2 = el("div", "fill" + (ov ? " over" : "")); f2.style.width = Math.min(100, Math.max(used > 0 ? 2 : 0, used / (c.amt || 1) * 100)) + "%";
+      t2.appendChild(f2); w.appendChild(row); w.appendChild(t2);
+      w.appendChild(el("div", "dl tot" + (ov ? " over" : ""), ov ? "เกินงบ ฿" + fmt(used - c.amt) : "เหลือ ฿" + fmt(c.amt - used)));
+      w.onclick = function(){ openBudgetEditor("Category", c); };
+      cs.appendChild(w);
+    });
+    if (!caps.length) cs.appendChild(el("div", "mhint", "ยังไม่ได้ตั้งงบหมวดไหน"));
+    var rest = Object.keys(byCat).filter(function(k){ return !capped[k]; }), restT = rest.reduce(function(a, k){ return a + byCat[k]; }, 0);
+    if (rest.length) { var u = el("div", "unbud"); u.appendChild(el("span", null, "หมวดที่ไม่ได้ตั้งงบ (" + rest.join(", ") + ")")); u.appendChild(el("span", "tot", "฿" + fmt(restT))); cs.appendChild(u); }
+    var ab = el("button", "bud-add"); ab.innerHTML = phSvg("plus"); ab.appendChild(document.createTextNode("ตั้งงบหมวด"));
+    ab.onclick = function(){ openBudgetEditor("Category", null); }; cs.appendChild(ab);
+    body.appendChild(cs);
+
+    budList(body, "Income", "money", incT);
+    budList(body, "Fixed", "receipt", fixT);
+    body.appendChild(el("div", "mhint", "รายการใน Data ที่ชื่อตรงกับค่าใช้จ่ายคงที่ (เช่น Netflix ที่ตัดบัตร) ไม่นับซ้ำในยอดใช้ไป · รายการที่หารกับคนอื่นนับเฉพาะส่วนของเรา"));
+  }
+  function budList(body, type, icon, total){
+    var isInc = type === "Income", lb = el("div", "blabel"), ld = el("span", "lead", BUD_TYPES[type]);
+    if (isInc) ld.appendChild(incEye());
+    lb.appendChild(ld); lb.appendChild(el("small", isInc ? "tot inc" : "tot", "฿" + fmt(total) + " / เดือน")); body.appendChild(lb);
+    var g = el("div", "glist cats"), items = budItems(type, true).sort(function(a, b){ return a.hidden - b.hidden || b.amt - a.amt; });
+    items.forEach(function(b){
+      var r = el("button", "grow-row" + (b.hidden ? " off" : ""));
+      var ic = el("span", "phw icsq"); ic.innerHTML = phSvg(icon); r.appendChild(ic);
+      var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, b.name)); t.appendChild(nm);
+      if (b.note || b.hidden) t.appendChild(el("small", null, b.hidden ? "ซ่อนไว้ ไม่นับ" : b.note)); r.appendChild(t);
+      r.appendChild(el("div", isInc ? "amt tot inc" : "amt tot", "฿" + fmt(b.amt))); r.appendChild(el("span", "chev"));
+      r.onclick = function(){ openBudgetEditor(type, b); }; g.appendChild(r);
+    });
+    var ab = el("button", "bud-add"); ab.innerHTML = phSvg("plus"); ab.appendChild(document.createTextNode("เพิ่ม" + BUD_TYPES[type]));
+    ab.onclick = function(){ openBudgetEditor(type, null); }; g.appendChild(ab);
+    body.appendChild(g);
+  }
+  function incEye(){
+    var b = el("button", "inc-eye"); b.type = "button";
+    function sync(x){ var h = document.documentElement.classList.contains("inc-hidden"); x.innerHTML = phSvg(h ? "eye-slash" : "eye"); x.setAttribute("aria-label", h ? "แสดงรายรับ" : "ซ่อนรายรับ"); x.setAttribute("aria-pressed", String(h)); }
+    // Every eye on the page flips together (one in the overview, one above the income list).
+    b.onclick = function(){ var h = document.documentElement.classList.toggle("inc-hidden"); [].forEach.call(document.querySelectorAll(".inc-eye"), sync); try { localStorage.setItem("incShown", h ? "" : "1"); } catch (e) {} };
+    sync(b); return b;
+  }
+  function openBudgetEditor(type, b){
+    var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden) };
+    var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + b.name : b.name);
+    openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
+      if (isNew && type === "Category") {
+        // Only categories that have no cap yet; the name must match Categories!A exactly.
+        var have = {}; budItems("Category", true).forEach(function(x){ have[x.name] = true; });
+        var g0 = group("หมวด"), grid = el("div", "chips"), left = catNames().filter(function(n){ return !have[n]; });
+        left.forEach(function(n){
+          var c = el("button", "chip"); c.type = "button"; c.appendChild(catIconEl(n)); c.appendChild(document.createTextNode(n)); c.setAttribute("aria-pressed", "false");
+          c.onclick = function(){ f.name = n; [].forEach.call(grid.children, function(y){ y.setAttribute("aria-pressed", String(y === c)); }); };
+          grid.appendChild(c);
+        });
+        g0.appendChild(grid); if (!left.length) g0._hint("ทุกหมวดมีงบแล้ว"); box.appendChild(g0);
+      } else if (isNew) {
+        var g1 = group("ชื่อ"), inp = el("input", "txt"); inp.placeholder = type === "Income" ? "เช่น เงินเดือน" : "เช่น ค่าเช่าห้อง"; inp.maxLength = 40; inp.autocomplete = "off";
+        inp.oninput = function(){ f.name = inp.value.trim(); };
+        g1.appendChild(inp);
+        g1._hint(type === "Fixed" ? "ถ้าจ่ายผ่านบัตรด้วย ให้ใช้ชื่อเดียวกับในรายการ จะได้ไม่นับซ้ำ · เปลี่ยนชื่อทีหลังไม่ได้" : "เปลี่ยนชื่อทีหลังไม่ได้");
+        box.appendChild(g1); setTimeout(function(){ inp.focus(); }, 350);
+      }
+      var g2 = group("ยอดต่อเดือน (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.placeholder = "0.00"; ai.autocomplete = "off";
+      ai.value = f.amt === "" ? "" : fmtAmt(f.amt); ai.oninput = function(){ f.amt = ai.value; };
+      g2.appendChild(ai); box.appendChild(g2);
+      if (!isNew && type === "Category") setTimeout(function(){ ai.focus(); ai.select(); }, 350);
+      var g3 = group("โน้ต"), ni = el("input", "txt"); ni.placeholder = "ไม่ใส่ก็ได้"; ni.maxLength = 80; ni.value = f.note; ni.oninput = function(){ f.note = ni.value.trim(); };
+      g3.appendChild(ni); box.appendChild(g3);
+      if (!isNew) {
+        var g4 = group(), sr = el("div", "swrow"), st = el("div", "txt");
+        st.appendChild(el("b", null, "นับในงบ")); st.appendChild(el("small", null, "ปิดเมื่อเลิกใช้ รายการจะยังอยู่ในชีตแต่ไม่นับ"));
+        sr.appendChild(st); sr.appendChild(switchEl(!f.hidden, function(v){ f.hidden = !v; })); g4.appendChild(sr); box.appendChild(g4);
+      }
+    }, function(){
+      var amt = num(f.amt);
+      if (!f.name) { $("itemMsg").textContent = type === "Category" ? "เลือกหมวดก่อน" : "ใส่ชื่อก่อน"; return; }
+      if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
+      saveItem("saveBudget", { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, isNew: isNew }, (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว");
+    });
   }
 
   // Rows grouped by day (newest first). Tap a row to edit, tap the pill to flip Pending/Paid.
@@ -1565,6 +1753,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       state.rows = parseRows(res.rows || [], res.rowNums);
       state.full = !res.partial;
       state.recurring = parseRecurring(res.recurring || []);
+      state.budget = parseBudget(res.budget || []);
     state.cash = res.cash || state.cash;
     state.salaryDay = res.salaryDay || state.salaryDay;
       var c = parseCards(res.cards || []); if (c) { state.cards = c.days; state.hidden = c.hidden; }
