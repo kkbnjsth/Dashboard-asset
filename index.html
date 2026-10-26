@@ -1173,9 +1173,24 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var out = [];
     for (var i = 1; i < values.length; i++) {
       var r = values[i] || [], type = String(r[0] || "").trim(), name = String(r[1] || "").trim();
-      if (BUD_TYPES[type] && name) out.push({ type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim(), group: groupOf(r[7]), match: matchWords(r[8]) });
+      if (!BUD_TYPES[type] || !name) continue;
+      var b = { type: type, name: name, amt: num(r[2]), note: String(r[3] || ""), hidden: isYes(r[4]), variable: isYes(r[5]), cat: String(r[6] || "").trim(), group: groupOf(r[7]), match: matchWords(r[8]) };
+      // A Category envelope covers its own category plus any listed in G ("Grocery, Snack").
+      if (type === "Category") { b.extra = b.cat.split(/[,;]/).map(function(s){ return s.trim(); }).filter(function(s){ return s && s !== name; }); b.cat = ""; }
+      out.push(b);
     }
     return out;
+  }
+  function capLabel(c){ return [c.name].concat(c.extra || []).join(" + "); }
+  // Spending per envelope; a category claimed by two visible envelopes counts in the first only.
+  function capUse(caps, byCat){
+    var seen = {}, out = [];
+    caps.forEach(function(c){
+      var u = 0;
+      [c.name].concat(c.extra || []).forEach(function(n){ if (!seen[n]) { seen[n] = true; u += byCat[n] || 0; } });
+      out.push(u);
+    });
+    return { used: out, capped: seen };
   }
   function parseActual(values){
     var out = {};
@@ -1277,8 +1292,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var cs0 = cycleSpend(sy), spent = cs0.spent, byCat = cs0.byCat;
     // Category caps are envelopes: money set aside up front, like Fixed. What is left after income − Fixed − carry −
     // envelopes is the leftover account; overspending an envelope, or spending in a category without one, eats into it.
-    var capT = budSum(caps), capUsed = 0, capOver = 0, capped = {};
-    caps.forEach(function(c){ var u = byCat[c.name] || 0; capped[c.name] = true; capUsed += u; capOver += Math.max(0, u - c.amt); });
+    var capT = budSum(caps), capUsed = 0, capOver = 0, cu = capUse(caps, byCat), capped = cu.capped;
+    caps.forEach(function(c, i){ var u = cu.used[i]; capUsed += u; capOver += Math.max(0, u - c.amt); });
     var rest = Object.keys(byCat).filter(function(k){ return !capped[k]; }), restT = rest.reduce(function(a, k){ return a + byCat[k]; }, 0);
     var leftPlan = avail - capT, leftNow = leftPlan - capOver - restT;
 
@@ -1341,10 +1356,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     ehl.appendChild(el("small", "est", "แบบซอง")); eh.appendChild(ehl);
     if (caps.length) eh.appendChild(el("span", "tot", "ใช้ไป ฿" + fmt(capUsed) + " / ฿" + fmt(capT)));
     cs.appendChild(eh);
-    caps.forEach(function(c){
-      var used = byCat[c.name] || 0, ov = used > c.amt + 0.004;
+    caps.forEach(function(c, i){
+      var used = cu.used[i], ov = used > c.amt + 0.004;
       var w = el("button", "cat btn"), row = el("div", "row");
-      var cl = el("span"); cl.appendChild(catIconEl(c.name)); cl.appendChild(document.createTextNode(c.name));
+      var cl = el("span"); cl.appendChild(catIconEl(c.name)); cl.appendChild(document.createTextNode(capLabel(c)));
       var cg = catGroup(c.name);
       if (cg) { var gb = el("i", "gbadge", cg); gb.style.setProperty("--g", groupColor(cg)); cl.appendChild(gb); }
       row.appendChild(cl);
@@ -1368,10 +1383,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   // Overspend carried in from earlier cycles also comes out of this income; it stays in its own grey line because
   // it was already counted in its groups back in the cycle it was spent.
   function renderCashflow(body, fix, caps, byCat, incT, sy, carry){
-    var t = { Life: 0, Soul: 0, Future: 0 }, none = 0, capOf = {};
+    var t = { Life: 0, Soul: 0, Future: 0 }, none = 0, cu = capUse(caps, byCat), capOf = cu.capped;
     function add(g, v){ if (g) t[g] += v; else none += v; }
     fix.forEach(function(b){ add(b.group, cycAmt(b, sy).amt); });
-    caps.forEach(function(c){ capOf[c.name] = true; add(catGroup(c.name), Math.max(c.amt, byCat[c.name] || 0)); });
+    // A combined envelope goes to its main category's group.
+    caps.forEach(function(c, i){ add(catGroup(c.name), Math.max(c.amt, cu.used[i])); });
     Object.keys(byCat).forEach(function(k){ if (!capOf[k]) add(catGroup(k), byCat[k]); });
     var used = t.Life + t.Soul + t.Future + none + carry, left = incT - used, base = Math.max(incT, used) || 1;
     var sec = el("div", "sec cflow"), h = el("h2", null, "สัดส่วน Cashflow"); h.appendChild(el("small", "tot inc", "ของรายรับ ฿" + fmt(incT))); sec.appendChild(h);
@@ -1524,18 +1540,43 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function openBudgetEditor(type, b){
     var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "", group: b ? b.group : "", match: b ? (b.match || []).join(", ") : "" };
     var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtAmt(act.amt) : "" };
-    var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + b.name : b.name);
+    f.extra = b && b.extra ? b.extra.slice() : [];
+    var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + capLabel(b) : b.name);
     openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
+      // Categories another visible envelope already covers (its own or combined in), so none is counted twice.
+      var taken = {};
+      if (type === "Category") budItems("Category").forEach(function(x){ if (x !== b) [x.name].concat(x.extra || []).forEach(function(n){ taken[n] = true; }); });
       if (isNew && type === "Category") {
         // Only categories that have no cap yet; the name must match Categories!A exactly.
         var have = {}; budItems("Category", true).forEach(function(x){ have[x.name] = true; });
-        var g0 = group("หมวด"), grid = el("div", "chips"), left = catNames().filter(function(n){ return !have[n]; });
+        var g0 = group("หมวด"), grid = el("div", "chips"), left = catNames().filter(function(n){ return !have[n] && !taken[n]; });
         left.forEach(function(n){
           var c = el("button", "chip"); c.type = "button"; c.appendChild(catIconEl(n)); c.appendChild(document.createTextNode(n)); c.setAttribute("aria-pressed", "false");
-          c.onclick = function(){ f.name = n; [].forEach.call(grid.children, function(y){ y.setAttribute("aria-pressed", String(y === c)); }); };
+          c.onclick = function(){ f.name = n; [].forEach.call(grid.children, function(y){ y.setAttribute("aria-pressed", String(y === c)); }); drawExtra(); };
           grid.appendChild(c);
         });
         g0.appendChild(grid); if (!left.length) g0._hint("ทุกหมวดมีงบแล้ว"); box.appendChild(g0);
+      }
+      if (type === "Category") {
+        // Extra categories sharing this envelope (Budget!G), e.g. Foodies + Grocery from one food account.
+        var gx = group("รวมหมวด"), xg = el("div", "chips");
+        var drawExtra = function(){
+          f.extra = f.extra.filter(function(n){ return n !== f.name; });
+          xg.innerHTML = "";
+          var opts = catNames().filter(function(n){ return n !== f.name && !taken[n]; });
+          f.extra.forEach(function(n){ if (opts.indexOf(n) < 0) opts.push(n); });
+          opts.forEach(function(n){
+            var c = el("button", "chip"); c.type = "button"; c.appendChild(catIconEl(n)); c.appendChild(document.createTextNode(n));
+            c.setAttribute("aria-pressed", String(f.extra.indexOf(n) >= 0));
+            c.onclick = function(){
+              var i = f.extra.indexOf(n); if (i >= 0) f.extra.splice(i, 1); else f.extra.push(n);
+              c.setAttribute("aria-pressed", String(i < 0));
+            };
+            xg.appendChild(c);
+          });
+          gx._hint(opts.length ? "ไม่บังคับ · เลือกหมวดที่ใช้เงินก้อนเดียวกัน ยอดที่ใช้จะนับรวมในซองนี้" : "ไม่มีหมวดอื่นให้รวม (หมวดที่มีซองอยู่แล้วรวมไม่ได้)");
+        };
+        gx.appendChild(xg); drawExtra(); box.appendChild(gx);
       } else if (isNew) {
         var g1 = group("ชื่อ"), inp = el("input", "txt"); inp.placeholder = type === "Income" ? "เช่น เงินเดือน" : "เช่น ค่าเช่าห้อง"; inp.maxLength = 40; inp.autocomplete = "off";
         inp.oninput = function(){ f.name = inp.value.trim(); };
@@ -1596,7 +1637,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var amt = num(f.amt);
       if (!f.name) { $("itemMsg").textContent = type === "Category" ? "เลือกหมวดก่อน" : "ใส่ชื่อก่อน"; return; }
       if (!(amt > 0)) { $("itemMsg").textContent = "ใส่ยอดมากกว่า 0"; return; }
-      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : "", group: type === "Fixed" ? f.group : "", match: type === "Fixed" ? f.match : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + f.name + " แล้ว";
+      var arg = { type: type, name: f.name, amount: amt, note: f.note, hidden: f.hidden, variable: f.variable, category: type === "Fixed" ? f.cat : type === "Category" ? f.extra.join(", ") : "", group: type === "Fixed" ? f.group : "", match: type === "Fixed" ? f.match : "", isNew: isNew }, done = (isNew ? "เพิ่ม " : "บันทึก ") + (type === "Category" ? [f.name].concat(f.extra).join(" + ") : f.name) + " แล้ว";
       var actNew = num(f2.actual), actChanged = !isNew && b.variable && actNew > 0 && !(act.real && Math.abs(actNew - act.amt) < 0.005);
       if (!actChanged) { saveItem("saveBudget", arg, done); return; }
       // Actual first, then the row itself; saveItem reloads once both are in.
