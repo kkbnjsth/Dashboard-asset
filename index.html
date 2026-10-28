@@ -462,6 +462,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .ocard:first-of-type{margin-top:6px}
 .ocard .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ocard small{flex:none;color:var(--muted);font-weight:500;font-size:13px}
+.ocard .ocsel,.owe-all{flex:none;padding:4px 2px 4px 8px;font-size:13px;font-weight:600;color:var(--accent)}
+.phead b#oweTitle{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px}
+.tx.pick{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tx.pick.off{opacity:.45;cursor:default}
+.tx .ck{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-mid);display:grid;place-items:center;font-size:13px;font-weight:700;color:transparent;transition:background-color .15s ease,border-color .15s ease}
+.tx .ck.on{background:var(--paid);border-color:var(--paid);color:#fff}
+.tx.pick .part{pointer-events:none}
 /* ---- Light / dark switch: the whole page cross-fades (View Transitions), with a colour-transition fallback ---- */
 :root{color-scheme:light}
 :root[data-theme="dark"]{color-scheme:dark}
@@ -610,9 +617,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 </div>
 <div class="overlay slide" id="oweSheet" hidden>
   <div class="panel auto" role="dialog" aria-label="รายการค้างจ่ายคืน">
-    <div class="phead"><b id="oweTitle"></b><button class="icon-btn" id="closeOwe" aria-label="Close" data-ph="x"></button></div>
+    <div class="phead"><b id="oweTitle"></b><div class="acts"><button class="pact" id="oweSelBtn">เลือก</button><button class="icon-btn" id="closeOwe" aria-label="Close" data-ph="x"></button></div></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
     <div class="composer" id="oweBillBar" hidden><button class="primary" id="oweBill" data-ph="receipt">สร้างใบเรียกเก็บเงิน</button></div>
+    <div class="composer" id="oweActBar" hidden><button class="primary" id="owePay"></button></div>
   </div>
 </div>
 <div class="overlay slide" id="billSheet" hidden>
@@ -2166,28 +2174,51 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }); });
     return out;
   }
+  // "เลือก" mode: oweSel = keys picked (null = off); the bottom button settles them all in one request.
+  var oweSel = null;
   function openOwe(name, card){
-    owePerson = name; oweCard = card || null; oweKeys = {};
+    owePerson = name; oweCard = card || null; oweKeys = {}; oweSel = null;
     oweItems().forEach(function(it){ if (!(it.p ? it.p.done : it.done)) oweKeys[it.key] = 1; });
     renderOwe(); showSheet("oweSheet");
   }
-  function closeOwe(){ owePerson = oweCard = null; hideSheet("oweSheet"); }
+  function closeOwe(){ owePerson = oweCard = oweSel = null; hideSheet("oweSheet"); }
+  function oweDone(it){ return it.p ? it.p.done : it.done; }
+  function oweAmt(it){ return it.p ? it.p.amt : it.amt; }
   function renderOwe(){
     if (!owePerson) return;
     var items = oweItems().filter(function(it){ return oweKeys[it.key]; }).sort(function(a, b){ return b.r.date - a.r.date || b.r.row - a.r.row; });
     var isMeSheet = owePerson === ME;
-    var left = items.filter(function(it){ return !(isMeSheet ? it.done : it.p.done); }).reduce(function(a, it){ return a + (isMeSheet ? it.amt : it.p.amt); }, 0);
+    var open = items.filter(function(it){ return !oweDone(it); });
+    var left = open.reduce(function(a, it){ return a + oweAmt(it); }, 0);
+    // Drop picks that got settled meanwhile (single tap, refresh), and leave "เลือก" once nothing is left to settle.
+    if (oweSel) { var still = {}; open.forEach(function(it){ if (oweSel[it.key]) still[it.key] = 1; }); oweSel = open.length ? still : null; }
+    var picking = !!oweSel;
     $("oweTitle").textContent = isMeSheet ? (oweCard || "ของเรา") + " ต้องเตรียม ฿" + fmt(left) : owePerson + " ค้าง ฿" + fmt(left);
-    $("oweBillBar").hidden = isMeSheet || left < 0.005;
+    $("oweSelBtn").hidden = !open.length && !picking;
+    $("oweSelBtn").textContent = picking ? "เสร็จ" : "เลือก";
+    $("oweBillBar").hidden = picking || isMeSheet || left < 0.005;
+    $("oweActBar").hidden = !picking;
     var box = $("oweBody"); box.textContent = "";
-    var h = el("h2", null, items.length + " รายการ"); h.appendChild(el("small", null, isMeSheet ? "แตะยอดเมื่อโยกเงินไปพักแล้ว (เป็น Paid)" : "แตะยอดเพื่อสลับว่าจ่ายคืนแล้วหรือยัง")); box.appendChild(h);
+    var h = el("h2", null, items.length + " รายการ");
+    if (picking) {
+      var allOn = open.every(function(it){ return oweSel[it.key]; });
+      var sa = el("button", "owe-all", allOn ? "ไม่เลือกเลย" : "เลือกทั้งหมด " + open.length);
+      sa.onclick = function(){ oweSel = {}; if (!allOn) open.forEach(function(it){ oweSel[it.key] = 1; }); renderOwe(); };
+      h.appendChild(sa);
+    } else h.appendChild(el("small", null, isMeSheet ? "แตะยอดเมื่อโยกเงินไปพักแล้ว (เป็น Paid)" : "แตะยอดเพื่อสลับว่าจ่ายคืนแล้วหรือยัง"));
+    box.appendChild(h);
+    if (picking) {
+      var picked = open.filter(function(it){ return oweSel[it.key]; }), sum = picked.reduce(function(a, it){ return a + oweAmt(it); }, 0);
+      var pay = $("owePay"); pay.disabled = !picked.length || writing;
+      pay.textContent = picked.length ? (isMeSheet ? "เป็น Paid " : "จ่ายคืนแล้ว ") + picked.length + " รายการ · ฿" + fmt(sum) : "เลือกรายการที่จ่ายแล้ว";
+    }
     if (!items.length) { box.appendChild(el("div", "empty", "ไม่มีรายการค้าง")); return; }
-    // Mine, all cards: one section per card, biggest first. Ordered by everything listed (ticked too),
-    // so a section doesn't jump while its items are being ticked off.
-    var byCard = isMeSheet && !oweCard;
+    // One section per card, biggest first (unless mine is already narrowed to one card). Ordered by everything
+    // listed (ticked too), so a section doesn't jump while its items are being ticked off.
+    var byCard = !(isMeSheet && oweCard);
     if (byCard) {
       var groups = {};
-      items.forEach(function(it){ var g = groups[it.r.card] || (groups[it.r.card] = { all: 0, left: 0, items: [] }); g.items.push(it); g.all += it.amt; if (!it.done) g.left += it.amt; });
+      items.forEach(function(it){ var g = groups[it.r.card] || (groups[it.r.card] = { all: 0, left: 0, items: [] }); g.items.push(it); g.all += oweAmt(it); if (!oweDone(it)) g.left += oweAmt(it); });
       items = [];
       Object.keys(groups).sort(function(a, b){ return groups[b].all - groups[a].all; }).forEach(function(c){
         items.push({ head: c, g: groups[c] }); items = items.concat(groups[c].items);
@@ -2195,23 +2226,78 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }
     items.forEach(function(it){
       if (it.head) {
-        var oh = el("div", "ocard"); oh.appendChild(cardThumb(it.head, "cthumb")); oh.appendChild(el("span", "nm", it.head));
-        oh.appendChild(el("small", "tot", it.g.items.length + " รายการ · ฿" + fmt(it.g.left))); box.appendChild(oh); return;
+        var oh = el("div", "ocard"); oh.appendChild(cardThumb(it.head, "cthumb")); oh.appendChild(el("span", "nm", it.head === state.cash ? "เงินสด" : it.head));
+        oh.appendChild(el("small", "tot", it.g.items.length + " รายการ · ฿" + fmt(it.g.left)));
+        var gOpen = it.g.items.filter(function(x){ return !oweDone(x); });
+        if (picking && gOpen.length) {
+          var gOn = gOpen.every(function(x){ return oweSel[x.key]; });
+          var gb = el("button", "ocsel", gOn ? "ไม่เลือก" : "เลือกทั้งบัตร");
+          gb.onclick = function(){ gOpen.forEach(function(x){ if (gOn) delete oweSel[x.key]; else oweSel[x.key] = 1; }); renderOwe(); };
+          oh.appendChild(gb);
+        }
+        box.appendChild(oh); return;
       }
-      var r = it.r, tx = el("div", "tx");
+      var r = it.r, tx = el("div", "tx"), done = oweDone(it), amt = oweAmt(it);
       tx.style.cursor = "default";
+      if (picking) {
+        tx.className = "tx pick" + (done ? " off" : ""); tx.style.cursor = "";
+        tx.appendChild(el("span", "ck" + (oweSel[it.key] ? " on" : ""), "✓"));
+        if (!done) tx.onclick = function(){ if (oweSel[it.key]) delete oweSel[it.key]; else oweSel[it.key] = 1; renderOwe(); };
+      }
       tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
-      l.appendChild(metaLine("div", "note", [dshort(r.date) + " " + r.date.getFullYear(), r.card && !isMeSheet ? cardChip(r.card) : "", isMeSheet && !it.split ? "" : "ทั้งบิล ฿" + fmt(r.cost)]));
+      l.appendChild(metaLine("div", "note", [dshort(r.date) + " " + r.date.getFullYear(), isMeSheet && !it.split ? "" : "ทั้งบิล ฿" + fmt(r.cost)]));
       tx.appendChild(l);
-      var rt = el("div", "rt"), done = isMeSheet ? it.done : it.p.done, amt = isMeSheet ? it.amt : it.p.amt;
+      var rt = el("div", "rt");
       var pb = el("button", "part" + (done ? " done" : ""), "฿" + fmtAmt(amt) + (done ? " ✓" : ""));
       // Mine: a split row ticks "เรา ✓"; a plain row flips Pending → Paid. Others: tick their share.
-      pb.onclick = function(){ if (!isMeSheet) toggleSplit(r, it.idx); else if (it.split) toggleSplit(r, -1); else toggleStatus(r); };
+      if (!picking) pb.onclick = function(){ if (!isMeSheet) toggleSplit(r, it.idx); else if (it.split) toggleSplit(r, -1); else toggleStatus(r); };
       rt.appendChild(pb); tx.appendChild(rt);
       box.appendChild(tx);
     });
+  }
+  function toggleOweSel(){ oweSel = oweSel ? null : {}; renderOwe(); }
+  // Settles every picked item in one updateRows request (same rules as a single tap: a split row whose shares
+  // are all ticked turns Paid). Undo writes each row's previous Status/Split back.
+  function payOweSel(){
+    if (writing || !oweSel) return;
+    var isMeSheet = owePerson === ME;
+    var picked = oweItems().filter(function(it){ return oweSel[it.key] && !oweDone(it); });
+    if (!picked.length) return;
+    var byRow = {};
+    picked.forEach(function(it){
+      var c = byRow[it.r.row] || (byRow[it.r.row] = { r: it.r, parts: it.r.parts.map(function(p){ return { name: p.name, amt: p.amt, done: p.done }; }), plain: false });
+      if (!isMeSheet) c.parts[it.idx].done = true;
+      else if (it.split) { if (!meDone(c.parts)) c.parts.push({ name: ME, amt: null, done: true }); }
+      else c.plain = true;
+    });
+    var list = [], undo = [], sum = picked.reduce(function(a, it){ return a + oweAmt(it); }, 0);
+    Object.keys(byRow).forEach(function(k){
+      var c = byRow[k], r = c.r, orig = { name: r.name, cost: r.cost, date: dfmt(r.date) };
+      var prev = { r: r, split: r.split, parts: r.parts, status: r.status };
+      if (c.plain) {
+        list.push({ row: r.row, orig: orig, vals: { status: "Paid" }, only: "status" });
+        undo.push({ row: r.row, orig: orig, vals: { status: r.status || "Pending" }, only: "status" });
+        r.status = "Paid";
+      } else {
+        var next = serializeSplit(c.parts), st = allSettled(c.parts) && !isPaid(r) ? "Paid" : null;
+        list.push({ row: r.row, orig: orig, vals: { split: next, status: st || undefined }, only: st ? "split_status" : "split" });
+        undo.push({ row: r.row, orig: orig, vals: { split: r.split || "", status: r.status || "Pending" }, only: st ? "split_status" : "split" });
+        r.split = next; r.parts = c.parts; if (st) r.status = st;
+      }
+      byRow[k] = prev;
+    });
+    var revert = function(){ Object.keys(byRow).forEach(function(k){ var p = byRow[k], cur = rowObj(p.r.row) || p.r; [cur, p.r].forEach(function(x){ x.split = p.split; x.parts = p.parts; x.status = p.status; }); }); };
+    writing = true; oweSel = null; render();
+    gs("updateRows", list).then(function(){
+      load();
+      showToast((isMeSheet ? "เป็น Paid " : owePerson + " จ่ายคืน ") + picked.length + " รายการ · ฿" + fmt(sum) + " ✓", function(){
+        if (writing) return;
+        writing = true; revert(); render();
+        gs("updateRows", undo).then(function(){ load(); }).catch(function(e){ showToast(writeErrCopy(e)); load(); }).then(function(){ writing = false; });
+      });
+    }).catch(function(e){ revert(); render(); showToast(writeErrCopy(e)); }).then(function(){ writing = false; render(); });
   }
 
   // ---------- Bill image: one person's unpaid shares drawn as a paper receipt on gray, saved/shared as JPG ----------
@@ -2954,6 +3040,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   $("editSave").onclick = saveEdit;
   $("editDel").onclick = deleteEdit;
   $("closeOwe").onclick = closeOwe;
+  $("oweSelBtn").onclick = toggleOweSel;
+  $("owePay").onclick = payOweSel;
   $("oweBill").onclick = openBill;
   $("closeBill").onclick = function(){ hideSheet("billSheet"); };
   $("billShare").onclick = shareBill;
