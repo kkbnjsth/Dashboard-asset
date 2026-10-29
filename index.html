@@ -808,7 +808,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var r = values[i] || [];
       var d = parseDate(r[2]);
       if (!r[0] || !d) continue;
-      var o = { row: nums ? nums[i] : i + 1, name: String(r[0]), cost: num(r[1]), date: d, status: String(r[3] || ""), cat: String(r[4] || "Other"), note: String(r[5] || ""), card: String(r[6] || ""), split: String(r[7] || ""), budget: String(r[8] || "").trim() }; o.bud = parseBud(o.budget); var ns0 = normalizeSplit(o.cost, o.split); o.parts = ns0.ok ? ns0.parts : parseSplit(o.split); out.push(o);
+      var o = { row: nums ? nums[i] : i + 1, name: String(r[0]), cost: num(r[1]), date: d, status: String(r[3] || ""), cat: String(r[4] || "Other"), note: String(r[5] || ""), card: String(r[6] || ""), split: String(r[7] || ""), budget: String(r[8] || "").trim(), bill: String(r[9] || "").trim() }; o.bud = parseBud(o.budget); o.bd = parseDate(o.bill) || d; var ns0 = normalizeSplit(o.cost, o.split); o.parts = ns0.ok ? ns0.parts : parseSplit(o.split); out.push(o);
     }
     return out;
   }
@@ -1021,7 +1021,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var strip = el("div", "strip");
       all.forEach(function(n){
         var cyN = cycleFor(state.cards[n] || 28, state.offset);
-        var rowsN = state.rows.filter(function(r){ return r.card === n && r.date >= cyN.start && r.date <= cyN.end; });
+        var rowsN = state.rows.filter(function(r){ return r.card === n && r.bd >= cyN.start && r.bd <= cyN.end; });
         if (state.hidden[n] && !rowsN.length) return;
         var totalN = rowsN.reduce(function(a, r){ return a + r.cost; }, 0);
         var stN = stampFor(cyN, n, totalN, rowsN.length);
@@ -1241,6 +1241,14 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   // The Data!I text a form saves: worked out again from the date, so it stays "next cycle" if the date is changed.
   function budText(date, on, left){ var d = parseDate(date); return on && d ? dfmt(nextCycleStart(d)) + (left ? " เหลือ" : "") : ""; }
+  // Data!J: a row can be put on a later card bill ("28/11/2026" = the card cycle starting that day), for purchases late
+  // in a cycle that the bank bills next time. Blank = the cycle of the transaction date. r.bd is the date card cycles go by.
+  function nextBill(card, d){
+    var day = state.cards[card] || 28, m = d.getMonth() - (d.getDate() < day ? 1 : 0) + 1;
+    return { start: new Date(d.getFullYear(), m, day), end: new Date(d.getFullYear(), m + 1, day - 1) };
+  }
+  // The Data!J text a form saves: worked out again from the date and card, so it stays "next bill" if either is changed.
+  function billText(date, card, on){ var d = parseDate(date); return on && d && card && card !== state.cash ? dfmt(nextBill(card, d).start) : ""; }
   function envFor(cat){ return budItems("Category").filter(function(c){ return c.name === cat || (c.extra || []).indexOf(cat) >= 0; })[0] || null; }
   // Spending in one salary cycle, by transaction date (not when it was moved aside or the bill was paid), or by the
   // budget cycle in Data!I: my share of every row in it, minus rows that belong to a Fixed item (already inside Fixed).
@@ -1710,7 +1718,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       tx.appendChild(catIconEl(r.cat, "ico"));
       var l = el("div", "l");
       l.appendChild(el("div", "n", r.name));
-      l.appendChild(metaLine("div", "note", [r.cat, r.note, showCard && r.card ? cardChip(r.card) : "", r.bud ? el("span", "btag", "งบรอบ " + dm(r.bud.start)) : ""]));
+      l.appendChild(metaLine("div", "note", [r.cat, r.note, showCard && r.card ? cardChip(r.card) : "", r.bud ? el("span", "btag", "งบรอบ " + dm(r.bud.start)) : "", r.bd !== r.date ? el("span", "btag", "บิลรอบ " + dm(r.bd)) : ""]));
       var op = others(r.parts);
       if (op.length) {
         var sumP = op.reduce(function(a, p){ return a + (p.amt || 0); }, 0);
@@ -1755,11 +1763,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     } else if (state.sel === "All") {
       names.forEach(function(n){
         var cy = cycleFor(state.cards[n] || 28, offset);
-        state.rows.forEach(function(r){ if (r.card === n && r.date >= cy.start && r.date <= cy.end) out.push(r); });
+        state.rows.forEach(function(r){ if (r.card === n && r.bd >= cy.start && r.bd <= cy.end) out.push(r); });
       });
     } else {
       var cy = cycleFor(state.cards[state.sel] || 28, offset);
-      state.rows.forEach(function(r){ if (r.card === state.sel && r.date >= cy.start && r.date <= cy.end) out.push(r); });
+      state.rows.forEach(function(r){ if (r.card === state.sel && r.bd >= cy.start && r.bd <= cy.end) out.push(r); });
     }
     return out;
   }
@@ -1915,7 +1923,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
 
   // ---------- Card picker (bottom sheet) ----------
-  function cardRows(card, cy){ return state.rows.filter(function(r){ return r.card === card && r.date >= cy.start && r.date <= cy.end; }); }
+  function cardRows(card, cy){ return state.rows.filter(function(r){ return r.card === card && r.bd >= cy.start && r.bd <= cy.end; }); }
   // Cards without a picture get a gradient picked from the name, so each one still looks distinct.
   // Hues taken from the app itself (ledger green, ink, brass, oxblood, slate), never the default purple.
   var CARD_ART = [["#0B4F45", "#16805F"], ["#1E2723", "#3D4B45"], ["#6B4E1F", "#A07A36"], ["#5B2A22", "#8E4535"], ["#1F3A52", "#3A6585"], ["#2E3B33", "#5A6D60"]];
@@ -2032,7 +2040,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     return gs("updateRow", {
       row: orig.row,
       orig: { name: orig.name, cost: orig.cost, date: dfmt(orig.date) },
-      vals: { name: vals.name, cost: vals.cost, date: vals.date ? dfmt(vals.date) : "", status: vals.status, category: vals.category, note: vals.note, card: vals.card, split: vals.split || "", budget: vals.budget || "" },
+      vals: { name: vals.name, cost: vals.cost, date: vals.date ? dfmt(vals.date) : "", status: vals.status, category: vals.category, note: vals.note, card: vals.card, split: vals.split || "", budget: vals.budget || "", bill: vals.bill || "" },
       only: onlyStatus === true ? "status" : (onlyStatus || "")
     }).then(function(){ load(); });
   }
@@ -2126,7 +2134,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   function openEdit(r){
     editing = r;
-    editCopy = { name: r.name, cost: r.cost, date: dfmt(r.date), status: isPaid(r) ? "Paid" : (r.status || "Pending"), category: r.cat, note: r.note, card: r.card, split: r.split || "", budget: r.budget || "" };
+    editCopy = { name: r.name, cost: r.cost, date: dfmt(r.date), status: isPaid(r) ? "Paid" : (r.status || "Pending"), category: r.cat, note: r.note, card: r.card, split: r.split || "", budget: r.budget || "", bill: r.bill || "" };
     $("editMsg").textContent = ""; $("editBody").parentNode.scrollTop = 0; renderEdit();
     $("editSave").disabled = false; $("editSave").textContent = "บันทึกการแก้ไข"; resetDel();
     showSheet("editSheet");
@@ -2136,7 +2144,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     b.textContent = ""; b.appendChild(txForm(editCopy, renderEdit)); sc.scrollTop = top;
   }
   function closeEdit(){ hideSheet("editSheet"); editing = null; resetDel(); }
-  // Delete = two taps (like the bill button). The server re-checks the row first (STALE) and shifts only A..H up.
+  // Delete = two taps (like the bill button). The server re-checks the row first (STALE) and shifts only A..J up.
   // Undo re-adds the same values at the bottom of the sheet (the page sorts by date, so it shows in the same place).
   var delArm = false, delTimer = null;
   function resetDel(){ delArm = false; clearTimeout(delTimer); var b = $("editDel"); b.classList.remove("armed"); b.disabled = false; b.textContent = "ลบรายการนี้"; }
@@ -2146,7 +2154,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     if (!delArm) { delArm = true; b.classList.add("armed"); b.textContent = "แตะอีกครั้งเพื่อยืนยันการลบ"; delTimer = setTimeout(resetDel, 4000); return; }
     clearTimeout(delTimer);
     var r = editing;
-    var vals = { name: r.name, cost: r.cost, date: dfmt(r.date), status: isPaid(r) ? "Paid" : "Pending", category: r.cat, note: r.note, card: r.card, split: r.split || "", budget: r.budget || "" };
+    var vals = { name: r.name, cost: r.cost, date: dfmt(r.date), status: isPaid(r) ? "Paid" : "Pending", category: r.cat, note: r.note, card: r.card, split: r.split || "", budget: r.budget || "", bill: r.bill || "" };
     writing = true; b.disabled = true; b.textContent = "กำลังลบ…"; $("editMsg").textContent = "";
     gs("deleteRow", { row: r.row, orig: { name: r.name, cost: r.cost, date: dfmt(r.date) } }).then(function(){
       state.rows = state.rows.filter(function(x){ return x !== r; });
@@ -2478,8 +2486,9 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var target = editing;
     writing = true; $("editSave").disabled = true; $("editSave").textContent = "กำลังบันทึก…"; $("editMsg").textContent = "";
     var bt = c.budget ? budText(c.date, true, parseBud(c.budget).left) : "";
-    updateRow(orig, { name: c.name, cost: c.cost, date: d, status: c.status, category: c.category, note: c.note, card: c.card, split: ns.text, budget: bt }, false).then(function(){
-      target.name = c.name; target.cost = c.cost; target.date = d; target.status = c.status; target.cat = c.category; target.note = c.note; target.card = c.card; target.split = ns.text; target.parts = ns.parts; target.budget = bt; target.bud = parseBud(bt);
+    var bl = c.bill ? billText(c.date, c.card, true) : "";
+    updateRow(orig, { name: c.name, cost: c.cost, date: d, status: c.status, category: c.category, note: c.note, card: c.card, split: ns.text, budget: bt, bill: bl }, false).then(function(){
+      target.name = c.name; target.cost = c.cost; target.date = d; target.status = c.status; target.cat = c.category; target.note = c.note; target.card = c.card; target.split = ns.text; target.parts = ns.parts; target.budget = bt; target.bud = parseBud(bt); target.bill = bl; target.bd = parseDate(bl) || d;
       closeEdit(); render(); showToast("แก้ไขแล้ว ✓");
     }).catch(function(e){
       $("editMsg").textContent = writeErrCopy(e); $("editSave").disabled = false; $("editSave").textContent = "บันทึกการแก้ไข";
@@ -2605,6 +2614,19 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     r._budLabel = on && nx ? dm(nx) + " · " + (left || !env ? "เงินเหลือ" : "ซอง " + capLabel(env)) : "";
     return disc(r, "_budLabel", "นับเป็นงบรอบหน้า", r._budLabel, w);
   }
+  // "ย้ายไปบิลรอบหน้า": the bank put this purchase on the card's next bill (Data!J); the date and the budget stay as they are.
+  function billField(r, redraw){
+    var d = parseDate(r.date), on = !!r.bill, nx = d && r.card ? nextBill(r.card, d) : null;
+    var cur = nx ? { start: new Date(nx.start.getFullYear(), nx.start.getMonth() - 1, nx.start.getDate()), end: new Date(nx.start - 86400000) } : null;
+    function set(o){ r.bill = billText(r.date, r.card, o); r._open = r._open || {}; r._open._billLabel = true; redraw(); }
+    var w = el("div"), r1 = el("div", "rail");
+    var a = opt(cur ? "รอบของวันที่ซื้อ " + dm(cur.start) + " – " + dm(cur.end) : "รอบของวันที่ซื้อ", !on); a.onclick = function(){ set(false); }; r1.appendChild(a);
+    var n = opt(nx ? "รอบถัดไป " + dm(nx.start) + " – " + dm(nx.end) : "รอบถัดไป", on); n.onclick = function(){ set(true); }; r1.appendChild(n);
+    w.appendChild(r1);
+    w.appendChild(el("div", "h", on ? "ยอดนี้ไปนับในบิลรอบถัดไปของ " + r.card + " แทน · วันที่ซื้อและงบไม่เปลี่ยน" : "ใช้เมื่อธนาคารเอายอดนี้ไปเรียกเก็บในบิลรอบหน้า (มักเป็นรายการช่วงท้ายรอบ)"));
+    r._billLabel = on && nx ? dm(nx.start) + " – " + dm(nx.end) : "";
+    return disc(r, "_billLabel", "ย้ายไปบิลรอบหน้า", r._billLabel, w);
+  }
   function txForm(r, redraw){
     var f = el("div", "txf");
     var ab = el("label", "amt-in"); ab.appendChild(el("span", null, "฿"));
@@ -2663,6 +2685,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     ex.appendChild(disc(r, "split", "แบ่งกับคนอื่น", sp && sp.ok ? (sp.parts.length + 1) + " คน · ของเรา ฿" + fmt(sp.mine) : r.split, splitField(r)));
     var no = document.createElement("input"); no.type = "text"; no.value = r.note || ""; no.placeholder = "เช่น ของเข้าบ้าน"; no.oninput = function(){ r.note = no.value; };
     ex.appendChild(disc(r, "note", "โน้ต", r.note, no));
+    if (r.card && r.card !== state.cash) ex.appendChild(billField(r, redraw));
     ex.appendChild(budField(r, redraw));
     f.appendChild(ex);
 
@@ -2752,7 +2775,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function addBlank(){
     var names = cardNames();
     var card0 = (state.sel && state.sel !== "All" && state.sel !== "Salary") ? state.sel : (names[0] || "");
-    draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.cash ? "Paid" : "Pending", category: catNames().indexOf("Food") >= 0 ? "Food" : (catNames()[0] || ""), note: "", split: "", budget: "", card: card0 });
+    draft.push({ name: "", cost: NaN, date: dfmt(today()), status: card0 === state.cash ? "Paid" : "Pending", category: catNames().indexOf("Food") >= 0 ? "Food" : (catNames()[0] || ""), note: "", split: "", budget: "", bill: "", card: card0 });
     activeDraft = draft.length - 1;
     renderDraft();
   }
@@ -2770,7 +2793,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       return;
     }
     dupAck = false; saving = true; $("saveBtn").disabled = true; $("saveBtn").textContent = "กำลังบันทึก…"; $("addMsg").textContent = "";
-    var rows = draft.map(function(r, i){ return { split: splitTxt[i], name: r.name.trim(), cost: r.cost, date: dfmt(parseDate(r.date)), status: r.status, category: r.category, note: r.note || "", card: r.card, budget: r.budget ? budText(r.date, true, parseBud(r.budget).left) : "" }; });
+    var rows = draft.map(function(r, i){ return { split: splitTxt[i], name: r.name.trim(), cost: r.cost, date: dfmt(parseDate(r.date)), status: r.status, category: r.category, note: r.note || "", card: r.card, budget: r.budget ? budText(r.date, true, parseBud(r.budget).left) : "", bill: r.bill ? billText(r.date, r.card, true) : "" }; });
     gs("addRows", rows).then(function(){
       var n = rows.length; draft = []; closeSheet(); showToast("บันทึกแล้ว " + n + " รายการ ✓"); return load();
     }).catch(function(e){
