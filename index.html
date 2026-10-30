@@ -458,6 +458,15 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .me-row .amt{font-size:18px}
 .glist.bycard{margin:-4px 0 12px}
 .glist.bycard .grow-row{min-height:52px}
+.glist.bycard .grow-row.cyc{min-height:46px;padding:6px 14px 6px 84px}
+.glist.bycard .grow-row.cyc .txt b{font-size:13px;font-weight:500}
+.glist.bycard .grow-row.cyc .amt{font-size:13px;font-weight:500}
+.glist.bycard .grow-row .txt small{white-space:normal}
+.ocard .nm small{display:block;font-size:12px;font-weight:400;line-height:1.4;white-space:normal}
+.owe-billbtn{width:100%;margin-bottom:6px;padding:10px;background:none;box-shadow:none;color:var(--accent);font-size:14px;font-weight:600}
+.owe-billbtn:not([hidden]){display:flex;align-items:center;justify-content:center;gap:6px}
+.owe-billbtn .phi{width:17px;height:17px}
+.owe-billbtn:disabled{opacity:.4}
 .ocard{display:flex;align-items:center;gap:10px;margin:18px 0 4px;font-size:14px;font-weight:600}
 .ocard:first-of-type{margin-top:6px}
 .ocard .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -620,7 +629,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     <div class="phead"><b id="oweTitle"></b><div class="acts"><button class="pact" id="oweSelBtn">เลือก</button><button class="icon-btn" id="closeOwe" aria-label="Close" data-ph="x"></button></div></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
     <div class="composer" id="oweBillBar" hidden><button class="primary" id="oweBill" data-ph="receipt">สร้างใบเรียกเก็บเงิน</button></div>
-    <div class="composer" id="oweActBar" hidden><button class="primary" id="owePay"></button></div>
+    <div class="composer" id="oweActBar" hidden><button class="ghost owe-billbtn" id="oweSelBill" data-ph="receipt" hidden>สร้างใบเรียกเก็บเงิน</button><button class="primary" id="owePay"></button></div>
   </div>
 </div>
 <div class="overlay slide" id="billSheet" hidden>
@@ -1151,13 +1160,23 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     mt.appendChild(el("small", "tot", mine.items.length ? mine.items.length + " รายการ Pending" + (state.full ? "" : " · กำลังโหลดรายการเก่า…") : "ไม่มีรายการ Pending ✓"));
     me.appendChild(mt); me.appendChild(el("span", "amt tot", "฿" + fmt(mine.total))); me.appendChild(el("span", "chev"));
     me.onclick = function(){ openOwe(ME); }; body.appendChild(me);
-    if (cards.length > 1) {
+    if (cards.length) {
       var bc = el("div", "glist bycard");
+      // A card with one bill says which it is under the name; with more, each bill gets its own row and sheet.
       cards.forEach(function(c){
+        var cys = myCycles(mine.items, c), one = cys.length === 1 ? cyLabel(c, cys[0].cy) : null;
         var r = el("button", "grow-row"); r.appendChild(cardThumb(c, "cc"));
-        var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, c)); t.appendChild(nm); r.appendChild(t);
-        r.appendChild(el("div", "amt tot", "฿" + fmt(mine.byCard[c]))); r.appendChild(el("span", "chev"));
+        var t = el("div", "txt"), nm = el("b"); nm.appendChild(el("span", null, c)); t.appendChild(nm);
+        if (one) t.appendChild(el("small", null, one.name + " · " + one.when));
+        r.appendChild(t);
+        r.appendChild(cyAmt(mine.byCard[c], one, "amt tot")); r.appendChild(el("span", "chev"));
         r.onclick = function(){ openOwe(ME, c); }; bc.appendChild(r);
+        if (cys.length > 1) cys.forEach(function(x){
+          var l = cyLabel(c, x.cy), s = el("button", "grow-row cyc"), st = el("div", "txt"), sn = el("b");
+          sn.appendChild(el("span", null, l.name)); st.appendChild(sn); st.appendChild(el("small", null, l.when)); s.appendChild(st);
+          s.appendChild(cyAmt(x.amt, l, "amt tot")); s.appendChild(el("span", "chev"));
+          s.onclick = function(){ openOwe(ME, c, x.key); }; bc.appendChild(s);
+        });
       });
       body.appendChild(bc);
     }
@@ -1243,9 +1262,30 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   function budText(date, on, left){ var d = parseDate(date); return on && d ? dfmt(nextCycleStart(d)) + (left ? " เหลือ" : "") : ""; }
   // Data!J: a row can be put on a later card bill ("28/11/2026" = the card cycle starting that day), for purchases late
   // in a cycle that the bank bills next time. Blank = the cycle of the transaction date. r.bd is the date card cycles go by.
-  function nextBill(card, d){
-    var day = state.cards[card] || 28, m = d.getMonth() - (d.getDate() < day ? 1 : 0) + 1;
+  function billCycleOf(card, d, offset){
+    var day = state.cards[card] || 28, m = d.getMonth() - (d.getDate() < day ? 1 : 0) + (offset || 0);
     return { start: new Date(d.getFullYear(), m, day), end: new Date(d.getFullYear(), m + 1, day - 1) };
+  }
+  function nextBill(card, d){ return billCycleOf(card, d, 1); }
+  // Where one bill stands, for the ค้างจ่าย page: only a closed, unpaid bill has a deadline to show.
+  function cyLabel(card, cy){
+    var t = today(), closed = cy.end < t, paid = (state.bills || {})[billKey(card, cy.end)];
+    return { name: cy.start > t ? "รอบหน้า" : !closed ? "รอบปัจจุบัน" : paid ? "จ่ายบิลแล้ว" : "ตัดรอบแล้ว", when: dm(cy.start) + " ถึง " + dm(cy.end), due: closed ? dueText(card, cy) : null };
+  }
+  function cyAmt(amt, label, cls){
+    var a = el("div", cls, "฿" + fmt(amt));
+    if (label && label.due) a.appendChild(el("small", null, label.due.rel));
+    return a;
+  }
+  // My open items on one card, one entry per bill, oldest first.
+  function myCycles(items, card){
+    var by = {};
+    items.forEach(function(e){
+      if (e.r.card !== card) return;
+      var cy = billCycleOf(card, e.r.bd), k = dfmt(cy.start);
+      (by[k] || (by[k] = { key: k, cy: cy, amt: 0 })).amt += e.amt;
+    });
+    return Object.keys(by).map(function(k){ return by[k]; }).sort(function(a, b){ return a.cy.start - b.cy.start; });
   }
   // The Data!J text a form saves: worked out again from the date and card, so it stays "next bill" if either is changed.
   function billText(date, card, on){ var d = parseDate(date); return on && d && card && card !== state.cash ? dfmt(nextBill(card, d).start) : ""; }
@@ -2172,10 +2212,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 
   // ---------- Who owes me: every unsettled share of one person, across all cycles ----------
   // Items listed when the panel opened stay listed after being ticked, so a mis-tap can be un-ticked.
-  // Mine can be narrowed to one card (oweCard), from the by-card rows on the ค้างจ่าย page.
-  var owePerson = null, oweKeys = null, oweCard = null;
+  // Mine can be narrowed to one card (oweCard) or one of its bills (oweCycle), from the by-card rows on the ค้างจ่าย page.
+  var owePerson = null, oweKeys = null, oweCard = null, oweCycle = null;
   function oweItems(){
-    if (owePerson === ME) return (state.rows || []).map(myEntry).filter(function(e){ return e && e.amt > 0.004 && (!oweCard || e.r.card === oweCard); });
+    if (owePerson === ME) return (state.rows || []).map(myEntry).filter(function(e){ return e && e.amt > 0.004 && (!oweCard || e.r.card === oweCard) && (!oweCycle || dfmt(billCycleOf(e.r.card, e.r.bd).start) === oweCycle); });
     var out = [];
     (state.rows || []).forEach(function(r){ (r.parts || []).forEach(function(p, idx){
       if (!isMe(p) && p.name === owePerson && p.amt) out.push({ r: r, p: p, idx: idx, key: r.row + "|" + idx });
@@ -2184,12 +2224,12 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   // "เลือก" mode: oweSel = keys picked (null = off); the bottom button settles them all in one request.
   var oweSel = null;
-  function openOwe(name, card){
-    owePerson = name; oweCard = card || null; oweKeys = {}; oweSel = null;
+  function openOwe(name, card, cycle){
+    owePerson = name; oweCard = card || null; oweCycle = cycle || null; oweKeys = {}; oweSel = null;
     oweItems().forEach(function(it){ if (!(it.p ? it.p.done : it.done)) oweKeys[it.key] = 1; });
     renderOwe(); showSheet("oweSheet");
   }
-  function closeOwe(){ owePerson = oweCard = oweSel = null; hideSheet("oweSheet"); }
+  function closeOwe(){ owePerson = oweCard = oweCycle = oweSel = null; hideSheet("oweSheet"); }
   function oweDone(it){ return it.p ? it.p.done : it.done; }
   function oweAmt(it){ return it.p ? it.p.amt : it.amt; }
   function renderOwe(){
@@ -2219,27 +2259,37 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var picked = open.filter(function(it){ return oweSel[it.key]; }), sum = picked.reduce(function(a, it){ return a + oweAmt(it); }, 0);
       var pay = $("owePay"); pay.disabled = !picked.length || writing;
       pay.textContent = picked.length ? (isMeSheet ? "เป็น Paid " : "จ่ายคืนแล้ว ") + picked.length + " รายการ · ฿" + fmt(sum) : "เลือกรายการที่จ่ายแล้ว";
+      $("oweSelBill").hidden = !isMeSheet; $("oweSelBill").disabled = !picked.length;
     }
     if (!items.length) { box.appendChild(el("div", "empty", "ไม่มีรายการค้าง")); return; }
-    // One section per card, biggest first (unless mine is already narrowed to one card). Ordered by everything
-    // listed (ticked too), so a section doesn't jump while its items are being ticked off.
-    var byCard = !(isMeSheet && oweCard);
-    if (byCard) {
-      var groups = {};
-      items.forEach(function(it){ var g = groups[it.r.card] || (groups[it.r.card] = { all: 0, left: 0, items: [] }); g.items.push(it); g.all += oweAmt(it); if (!oweDone(it)) g.left += oweAmt(it); });
-      items = [];
-      Object.keys(groups).sort(function(a, b){ return groups[b].all - groups[a].all; }).forEach(function(c){
-        items.push({ head: c, g: groups[c] }); items = items.concat(groups[c].items);
-      });
-    }
+    // One section per card, biggest first; mine also per bill, oldest first. Ordered by everything listed
+    // (ticked too), so a section doesn't jump while its items are being ticked off.
+    var groups = {}, cardAll = {};
+    items.forEach(function(it){
+      var cy = isMeSheet ? billCycleOf(it.r.card, it.r.bd) : null, k = it.r.card + (cy ? "|" + dfmt(cy.start) : "");
+      var g = groups[k] || (groups[k] = { card: it.r.card, cy: cy, all: 0, left: 0, items: [] });
+      g.items.push(it); g.all += oweAmt(it); cardAll[it.r.card] = (cardAll[it.r.card] || 0) + oweAmt(it);
+      if (!oweDone(it)) g.left += oweAmt(it);
+    });
+    items = [];
+    Object.keys(groups).sort(function(a, b){
+      var x = groups[a], y = groups[b];
+      return cardAll[y.card] - cardAll[x.card] || (x.card < y.card ? -1 : x.card > y.card ? 1 : 0) || (x.cy && y.cy ? x.cy.start - y.cy.start : 0);
+    }).forEach(function(k){
+      items.push({ head: groups[k].card, g: groups[k] }); items = items.concat(groups[k].items);
+    });
     items.forEach(function(it){
       if (it.head) {
-        var oh = el("div", "ocard"); oh.appendChild(cardThumb(it.head, "cthumb")); oh.appendChild(el("span", "nm", it.head === state.cash ? "เงินสด" : it.head));
-        oh.appendChild(el("small", "tot", it.g.items.length + " รายการ · ฿" + fmt(it.g.left)));
+        var oh = el("div", "ocard"), ty = it.g.cy ? cyLabel(it.g.card, it.g.cy) : null, cname = it.head === state.cash ? "เงินสด" : it.head;
+        oh.appendChild(cardThumb(it.head, "cthumb"));
+        var onm = el("span", "nm", ty && oweCard ? ty.name : cname);
+        if (ty) onm.appendChild(el("small", null, (oweCard ? "" : ty.name + " · ") + ty.when + (ty.due ? " · " + ty.due.rel : "")));
+        oh.appendChild(onm);
+        oh.appendChild(el("small", "tot", (picking && ty ? "" : it.g.items.length + " รายการ · ") + "฿" + fmt(it.g.left)));
         var gOpen = it.g.items.filter(function(x){ return !oweDone(x); });
         if (picking && gOpen.length) {
           var gOn = gOpen.every(function(x){ return oweSel[x.key]; });
-          var gb = el("button", "ocsel", gOn ? "ไม่เลือก" : "เลือกทั้งบัตร");
+          var gb = el("button", "ocsel", gOn ? "ไม่เลือก" : ty ? "เลือกทั้งงวด" : "เลือกทั้งบัตร");
           gb.onclick = function(){ gOpen.forEach(function(x){ if (gOn) delete oweSel[x.key]; else oweSel[x.key] = 1; }); renderOwe(); };
           oh.appendChild(gb);
         }
@@ -2308,19 +2358,20 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }).catch(function(e){ revert(); render(); showToast(writeErrCopy(e)); }).then(function(){ writing = false; render(); });
   }
 
-  // ---------- Bill image: one person's unpaid shares drawn as a paper receipt on gray, saved/shared as JPG ----------
+  // ---------- Bill image: one person's unpaid shares (mine: the items picked) drawn as a paper receipt on gray, saved/shared as JPG ----------
   // Built when the preview opens, so the share button can hand over a ready file inside the tap (iOS needs that).
   var billFile = null;
   function openBill(){
-    var items = oweItems().filter(function(it){ return !it.p.done; }).sort(function(a, b){ return a.r.date - b.r.date || a.r.row - b.r.row; });
+    var isMeSheet = owePerson === ME;
+    var items = oweItems().filter(function(it){ return !oweDone(it) && (!isMeSheet || (oweSel && oweSel[it.key])); }).sort(function(a, b){ return a.r.date - b.r.date || a.r.row - b.r.row; });
     if (!items.length) return;
     var now = new Date(), yr = now.getFullYear(), h = 0;
     for (var i = 0; i < owePerson.length; i++) h = (h * 31 + owePerson.charCodeAt(i)) >>> 0;
     var bill = {
-      person: owePerson,
+      person: owePerson, mine: isMeSheet,
       no: "CJ-" + String(yr).slice(2) + ("0" + (now.getMonth() + 1)).slice(-2) + ("0" + now.getDate()).slice(-2) + "-" + (h % 4096).toString(16).toUpperCase().padStart(3, "0"),
       date: now.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + " · " + now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-      items: items.map(function(it){ return { name: it.r.name, date: dshort(it.r.date) + (it.r.date.getFullYear() !== yr ? " " + it.r.date.getFullYear() : ""), amt: it.p.amt, whole: it.r.cost }; })
+      items: items.map(function(it){ return { name: it.r.name, date: dshort(it.r.date) + (it.r.date.getFullYear() !== yr ? " " + it.r.date.getFullYear() : "") + (isMeSheet ? "  ·  " + it.r.card : ""), amt: oweAmt(it), whole: it.r.cost }; })
     };
     billFile = null; $("billShare").disabled = true; $("billImg").removeAttribute("src");
     showSheet("billSheet");
@@ -2371,8 +2422,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var cv = document.createElement("canvas"), x = cv.getContext("2d");
     var total = o.items.reduce(function(a, it){ return a + it.amt; }, 0), qr = null;
     // With a PromptPay number (from the server) and the QR library loaded, a pay-this-amount QR replaces the barcode.
-    // Level H (30% recovery) so the app logo can sit over its middle.
-    if (state.promptpay && window.qrcode) { qr = qrcode(0, "H"); qr.addData(promptPayPayload(state.promptpay, total)); qr.make(); }
+    // Level H (30% recovery) so the app logo can sit over its middle. Not on my own bill: the QR would pay me.
+    if (!o.mine && state.promptpay && window.qrcode) { qr = qrcode(0, "H"); qr.addData(promptPayPayload(state.promptpay, total)); qr.make(); }
     function font(w, px, fam){ x.font = w + " " + px + "px " + (fam || TH); }
     function fit(t, maxW){
       if (x.measureText(t).width <= maxW) return t;
@@ -2458,8 +2509,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       y += 78;
       }
       if (draw) {
-        font("500", 13); text("ขอบคุณที่ใช้บริการ 🙏", W / 2, y, "center");
-        font("400", 11); text("โอนแล้วส่งสลิปมาด้วยน้า", W / 2, y + 18, "center", SOFT);
+        font("500", 13); text(o.mine ? "สู้ๆ นะเรา 🙏" : "ขอบคุณที่ใช้บริการ 🙏", W / 2, y, "center");
+        font("400", 11); text(o.mine ? "เตรียมเงินให้พร้อมก่อนครบกำหนดน้า" : "โอนแล้วส่งสลิปมาด้วยน้า", W / 2, y + 18, "center", SOFT);
       }
       return y + 40;
     }
@@ -3066,6 +3117,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   $("oweSelBtn").onclick = toggleOweSel;
   $("owePay").onclick = payOweSel;
   $("oweBill").onclick = openBill;
+  $("oweSelBill").onclick = openBill;
   $("closeBill").onclick = function(){ hideSheet("billSheet"); };
   $("billShare").onclick = shareBill;
   $("closeCards").onclick = closeCards;
