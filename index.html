@@ -516,7 +516,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .flow .leftbar{display:block;padding:4px 0 2px}
 .leftbar .track{height:8px}
 .leg .over{color:var(--pending)}
-.leftbar .why{display:block;padding:4px 0 0;font-size:12px;color:var(--muted);line-height:var(--lh-thai)}
+.leftpv{display:flex;align-items:center;gap:6px;width:100%;min-height:32px;margin-top:4px;padding:0;font:inherit;font-size:12px;color:var(--muted);text-align:left;-webkit-tap-highlight-color:transparent}
+.leftpv .names{flex:1;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:var(--lh-thai)}
+.leftpv small{flex:none;font-size:12px}
+.leftpv i{flex:none;display:grid;place-items:center;font-style:normal}
+.leftpv .phi{width:16px;height:16px}
 .fsec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:14px 16px 4px;font-size:12.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .fsec-h span:first-child{display:flex;align-items:center;gap:4px;color:var(--text)}
 .envsec{padding:0 16px 2px;border-bottom:1px solid var(--line);margin-bottom:2px}
@@ -1297,7 +1301,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   // budget cycle in Data!I: my share of every row in it, minus rows that belong to a Fixed item (already inside Fixed).
   // Rows moved here "out of leftover" are kept out of byCat so no envelope counts them.
   function cycleSpend(sy){
-    var spent = 0, byCat = {}, left = 0, leftByCat = {}, movedIn = [], movedOut = [];
+    var spent = 0, byCat = {}, left = 0, leftByCat = {}, movedIn = [], movedOut = [], rows = [];
     function inSy(d){ return d >= sy.start && d <= sy.end; }
     state.rows.forEach(function(r){
       if (fixedFor(r)) return;
@@ -1305,11 +1309,11 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       if (r.bud && inSy(r.date) && !inSy(d)) movedOut.push(r);
       if (!inSy(d)) return;
       if (r.bud && !inSy(r.date)) movedIn.push(r);
-      var m = myShare(r); spent += m;
+      var m = myShare(r); spent += m; rows.push(r);
       if (r.bud && r.bud.left) { left += m; leftByCat[r.cat] = (leftByCat[r.cat] || 0) + m; }
       else byCat[r.cat] = (byCat[r.cat] || 0) + m;
     });
-    return { spent: spent, byCat: byCat, left: left, leftByCat: leftByCat, movedIn: movedIn, movedOut: movedOut };
+    return { spent: spent, byCat: byCat, left: left, leftByCat: leftByCat, movedIn: movedIn, movedOut: movedOut, rows: rows };
   }
   // Overspend carried into a cycle: the last CARRY_CYCLES cycles chained, deficits only. A surplus is not carried,
   // since that money may already be saved or spent elsewhere; older cycles predate the budget, so they are left out.
@@ -1358,6 +1362,35 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       if (s === "" || !(amt >= 0)) { $("itemMsg").textContent = "ใส่ยอด (0 ได้ถ้าไม่มียอดยกมา)"; return; }
       saveItem("saveCarry", { cycleStart: dfmt(sy.start), amount: amt }, "บันทึกยอดยกมาแล้ว");
     });
+  }
+  // Read-only list behind the เงินเหลือ bar. Tapping a row closes it and opens that row, since saving reloads the page under it.
+  function openLeftUse(sy, use){
+    openItem("ใช้เงินเหลือไปกับอะไร", "ปิด", function(box){
+      box.appendChild(el("div", "mhint", dstr(sy.start) + " – " + dstr(sy.end)));
+      function head(t, amt){ var d = el("div", "day"); d.appendChild(el("span", null, t)); d.appendChild(el("span", null, "฿" + fmt(amt))); box.appendChild(d); }
+      function part(t, rows){
+        if (!rows.length) return;
+        head(t, rows.reduce(function(a, r){ return a + myShare(r); }, 0));
+        rows.slice().sort(function(a, b){ return b.date - a.date; }).forEach(function(r){
+          var tx = el("div", "tx"), l = el("div", "l"), rt = el("div", "rt"), m = myShare(r);
+          tx.appendChild(catIconEl(r.cat, "ico")); l.appendChild(el("div", "n", r.name));
+          l.appendChild(metaLine("div", "note", [dm(r.date), r.cat, r.card ? cardChip(r.card) : "", m < r.cost - 0.004 ? "ส่วนของเรา" : ""]));
+          tx.appendChild(l); rt.appendChild(el("div", "c", "฿" + fmt(m))); tx.appendChild(rt);
+          tx.onclick = function(){ hideSheet("itemSheet"); openEdit(r); }; box.appendChild(tx);
+        });
+      }
+      part("ยกมาจากรอบก่อน", use.rows.filter(function(r){ return r.date < sy.start; }));
+      part("ใช้ในรอบนี้", use.rows.filter(function(r){ return r.date >= sy.start; }));
+      if (use.over.length) {
+        head("ใช้เกินซอง", use.over.reduce(function(a, o){ return a + o.used - o.c.amt; }, 0));
+        use.over.forEach(function(o){
+          var tx = el("div", "tx"), l = el("div", "l"), rt = el("div", "rt"); tx.style.cursor = "default";
+          tx.appendChild(catIconEl(o.c.name, "ico")); l.appendChild(el("div", "n", capLabel(o.c)));
+          l.appendChild(el("div", "note", "ใช้ ฿" + fmt(o.used) + " จากซอง ฿" + fmt(o.c.amt)));
+          tx.appendChild(l); rt.appendChild(el("div", "c", "฿" + fmt(o.used - o.c.amt))); tx.appendChild(rt); box.appendChild(tx);
+        });
+      }
+    }, function(){ hideSheet("itemSheet"); });
   }
   function renderBudgetPage(body){
     var sy = cycleFor(state.salaryDay, state.offset);
@@ -1423,11 +1456,18 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         var llg = el("div", "leg"); llg.appendChild(el("span", "tot", "ใช้ไป ฿" + fmt(lUsed)));
         llg.appendChild(el("span", "tot inc" + (lOver ? " over" : ""), lOver ? "เกิน ฿" + fmt(-leftNow) : "เหลือ ฿" + fmt(leftNow)));
         lb.appendChild(lt); lb.appendChild(llg);
-        var cuts = [];
-        if (capOver > 0.004) cuts.push("ใช้เกินซอง ฿" + fmt(capOver));
-        if (restT > 0.004) cuts.push("หมวดที่ไม่ได้ตั้งงบ ฿" + fmt(restT));
-        if (leftT > 0.004) cuts.push("ยกมาหักเงินเหลือ ฿" + fmt(leftT));
-        if (cuts.length) lb.appendChild(el("div", "why", cuts.join(" · ")));
+        // What ate into it, biggest first: rows counted against leftover, or in a category without an envelope, plus envelope overspend.
+        var use = { rows: cs0.rows.filter(function(r){ return myShare(r) > 0.004 && ((r.bud && r.bud.left) || !capped[r.cat]); }), over: [] };
+        caps.forEach(function(c, i){ if (cu.used[i] > c.amt + 0.004) use.over.push({ c: c, used: cu.used[i] }); });
+        var seenN = {}, names = use.rows.map(function(r){ return { n: r.name, a: myShare(r) }; })
+          .concat(use.over.map(function(o){ return { n: "เกินซอง " + capLabel(o.c), a: o.used - o.c.amt }; }))
+          .sort(function(a, b){ return b.a - a.a; }).filter(function(x){ var dup = seenN[x.n]; seenN[x.n] = 1; return !dup; }).map(function(x){ return x.n; });
+        if (names.length) {
+          var pv = el("button", "leftpv"); pv.type = "button"; pv.appendChild(el("span", "names", names.slice(0, 3).join(", ")));
+          pv.appendChild(el("small", null, (use.rows.length + use.over.length) + " รายการ"));
+          var pvi = el("i"); pvi.innerHTML = phSvg("caret-right"); pv.appendChild(pvi);
+          pv.onclick = function(){ openLeftUse(sy, use); }; lb.appendChild(pv);
+        }
         fl.appendChild(lb);
       }
       if (ci.manual) fl.appendChild(el("div", "mhint", "ใส่ยอดยกมาเอง (แอปคำนวณได้ ฿" + fmt(ci.computed) + ") · แตะบรรทัดยกยอดเพื่อแก้"));
