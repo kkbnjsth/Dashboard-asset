@@ -463,8 +463,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
 .glist.bycard .grow-row.cyc .amt{font-size:13px;font-weight:500}
 .glist.bycard .grow-row .txt small{white-space:normal}
 .ocard .nm small{display:block;font-size:12px;font-weight:400;line-height:1.4;white-space:normal}
-.owe-billbtn{width:100%;margin-bottom:6px;padding:10px;background:none;box-shadow:none;color:var(--accent);font-size:14px;font-weight:600}
-.owe-billbtn:not([hidden]){display:flex;align-items:center;justify-content:center;gap:6px}
+.owe-billbtn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-bottom:6px;padding:10px;background:none;box-shadow:none;color:var(--accent);font-size:14px;font-weight:600}
 .owe-billbtn .phi{width:17px;height:17px}
 .owe-billbtn:disabled{opacity:.4}
 .ocard{display:flex;align-items:center;gap:10px;margin:18px 0 4px;font-size:14px;font-weight:600}
@@ -636,7 +635,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     <div class="phead"><b id="oweTitle"></b><div class="acts"><button class="pact" id="oweSelBtn">เลือก</button><button class="icon-btn" id="closeOwe" aria-label="Close" data-ph="x"></button></div></div>
     <div class="scroller"><div class="sec" id="oweBody"></div></div>
     <div class="composer" id="oweBillBar" hidden><button class="primary" id="oweBill" data-ph="receipt">สร้างใบเรียกเก็บเงิน</button></div>
-    <div class="composer" id="oweActBar" hidden><button class="ghost owe-billbtn" id="oweSelBill" data-ph="receipt" hidden>สร้างใบเรียกเก็บเงิน</button><button class="primary" id="owePay"></button></div>
+    <div class="composer" id="oweActBar" hidden><button class="ghost owe-billbtn" id="oweSelBill" data-ph="receipt">สร้างใบเรียกเก็บเงิน</button><button class="primary" id="owePay"></button></div>
   </div>
 </div>
 <div class="overlay slide" id="billSheet" hidden>
@@ -2310,7 +2309,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var picked = open.filter(function(it){ return oweSel[it.key]; }), sum = picked.reduce(function(a, it){ return a + oweAmt(it); }, 0);
       var pay = $("owePay"); pay.disabled = !picked.length || writing;
       pay.textContent = picked.length ? (isMeSheet ? "เป็น Paid " : "จ่ายคืนแล้ว ") + picked.length + " รายการ · ฿" + fmt(sum) : "เลือกรายการที่จ่ายแล้ว";
-      $("oweSelBill").hidden = !isMeSheet; $("oweSelBill").disabled = !picked.length;
+      $("oweSelBill").disabled = !picked.length;
     }
     if (!items.length) { box.appendChild(el("div", "empty", "ไม่มีรายการค้าง")); return; }
     // One section per card, biggest first; mine also per bill, oldest first. Ordered by everything listed
@@ -2336,7 +2335,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         var onm = el("span", "nm", ty && oweCard ? ty.name : cname);
         if (ty) onm.appendChild(el("small", null, (oweCard ? "" : ty.name + " · ") + ty.when + (ty.due ? " · " + ty.due.rel : "")));
         oh.appendChild(onm);
-        oh.appendChild(el("small", "tot", (picking && ty ? "" : it.g.items.length + " รายการ · ") + "฿" + fmt(it.g.left)));
+        oh.appendChild(el("small", "tot", (picking ? "" : it.g.items.length + " รายการ · ") + "฿" + fmt(it.g.left)));
         var gOpen = it.g.items.filter(function(x){ return !oweDone(x); });
         if (picking && gOpen.length) {
           var gOn = gOpen.every(function(x){ return oweSel[x.key]; });
@@ -2409,12 +2408,12 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     }).catch(function(e){ revert(); render(); showToast(writeErrCopy(e)); }).then(function(){ writing = false; render(); });
   }
 
-  // ---------- Bill image: one person's unpaid shares (mine: the items picked) drawn as a paper receipt on gray, saved/shared as JPG ----------
+  // ---------- Bill image: one person's unpaid shares (or just the items picked) drawn as a paper receipt on gray, saved/shared as JPG ----------
   // Built when the preview opens, so the share button can hand over a ready file inside the tap (iOS needs that).
   var billFile = null;
   function openBill(){
     var isMeSheet = owePerson === ME;
-    var items = oweItems().filter(function(it){ return !oweDone(it) && (!isMeSheet || (oweSel && oweSel[it.key])); }).sort(function(a, b){ return a.r.date - b.r.date || a.r.row - b.r.row; });
+    var items = oweItems().filter(function(it){ return !oweDone(it) && (!oweSel || oweSel[it.key]); }).sort(function(a, b){ return a.r.date - b.r.date || a.r.row - b.r.row; });
     if (!items.length) return;
     var now = new Date(), yr = now.getFullYear(), h = 0;
     for (var i = 0; i < owePerson.length; i++) h = (h * 31 + owePerson.charCodeAt(i)) >>> 0;
