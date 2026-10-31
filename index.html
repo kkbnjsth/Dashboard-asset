@@ -783,6 +783,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   // SPLIT-HELPERS-START
   // Split text lives in one cell (Data!H): "มิ้นท์ 450; ป้า 300 ✓"  (each OTHER person's share; a trailing ✓ = paid back)
   function fmtAmt(n){ return Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2); }
+  // For showing: fmtAmt with thousands separators. fmtAmt itself is what goes into the Split text in the sheet.
+  function fmtShort(n){ var d = Math.abs(n - Math.round(n)) < 0.005 ? 0 : 2; return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  // Amount inputs show separators once you leave them; every reader strips commas, so typing is left alone.
+  function commaInput(inp){ inp.addEventListener("blur", function(){ var n = parseFloat(inp.value.replace(/,/g, "")); if (isFinite(n)) inp.value = fmtShort(n); }); }
   function parseSplit(t){
     var out = [];
     String(t || "").split(/[;\n]/).forEach(function(s){
@@ -1109,7 +1113,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     if (mine.items.length || ow.names.length) {
       var orow = el("button", "sum-row"); var oi = el("span", "ico2"); oi.innerHTML = phSvg("hand-coins"); orow.appendChild(oi);
       var ot = el("div", "txt"); ot.appendChild(el("b", null, "ต้องเตรียมจ่าย"));
-      ot.appendChild(el("small", "tot", mine.items.length + " รายการ" + (ow.names.length ? " · คนอื่นค้าง ฿" + fmtAmt(ow.total) : ""))); orow.appendChild(ot);
+      ot.appendChild(el("small", "tot", mine.items.length + " รายการ" + (ow.names.length ? " · คนอื่นค้าง ฿" + fmtShort(ow.total) : ""))); orow.appendChild(ot);
       orow.appendChild(el("span", "amt tot", "฿" + fmt(mine.total))); orow.appendChild(el("span", "chev"));
       orow.onclick = function(){ goTab("owe"); }; body.appendChild(orow);
     }
@@ -1338,17 +1342,17 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       .reduce(function(a, e){ return a + e.amt; }, 0);
   }
   function openCarryEditor(sy, ci){
-    var v = { amt: fmtAmt(ci.amt) }, owed = pendingBefore(sy);
+    var v = { amt: fmtShort(ci.amt) }, owed = pendingBefore(sy);
     openItem("ยกยอดจากรอบก่อน", "บันทึก", function(box){
       var g1 = group("ยอดที่เงินเดือนรอบนี้ต้องเอาไปโปะ (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.autocomplete = "off";
-      ai.value = v.amt; ai.oninput = function(){ v.amt = ai.value; }; g1.appendChild(ai);
+      ai.value = v.amt; ai.oninput = function(){ v.amt = ai.value; }; commaInput(ai); g1.appendChild(ai);
       g1._hint("แอปคำนวณได้ ฿" + fmt(ci.computed) + " จากยอดที่ใช้เกินงบรอบก่อน (ย้อน " + CARRY_CYCLES + " รอบ) · ถ้าไม่ตรงกับหนี้ที่ต้องโปะจริง ใส่ยอดจริงแทนได้ ใส่ 0 ได้ถ้าไม่มี");
       box.appendChild(g1);
       if (owed > 0.004) {
         // The usual right answer when last cycle's leftover is already gone: card debt still Pending from before.
         var g2 = group(), sr = el("div", "swrow"), st = el("div", "txt");
         st.appendChild(el("b", null, "ยอดบัตรรอบก่อนที่ยังค้าง ฿" + fmt(owed))); st.appendChild(el("small", null, "ส่วนของเราที่ยังเป็น Pending ของรายการก่อน " + dm(sy.start)));
-        var use = el("button", "pact", "ใช้ยอดนี้"); use.type = "button"; use.onclick = function(){ ai.value = fmtAmt(owed); v.amt = ai.value; };
+        var use = el("button", "pact", "ใช้ยอดนี้"); use.type = "button"; use.onclick = function(){ ai.value = fmtShort(owed); v.amt = ai.value; };
         sr.appendChild(st); sr.appendChild(use); g2.appendChild(sr); box.appendChild(g2);
       }
       if (ci.manual) {
@@ -1566,7 +1570,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       var ic = el("span", "phw icsq"); ic.innerHTML = phSvg(isInc ? "money" : "receipt"); row.appendChild(ic);
       var t = el("div", "txt"); t.appendChild(el("b", null, b.name));
       t.appendChild(el("small", isInc ? "tot inc" : "tot", "ปกติ ฿" + fmt(b.amt))); row.appendChild(t);
-      var inp = el("input", "cin amtin" + (isInc ? " inc" : "")); inp.inputMode = "decimal"; inp.autocomplete = "off"; inp.value = fmtAmt(b.amt);
+      var inp = el("input", "cin amtin" + (isInc ? " inc" : "")); inp.inputMode = "decimal"; inp.autocomplete = "off"; inp.value = fmtShort(b.amt); commaInput(inp);
       inp.setAttribute("aria-label", "ยอดจริงของ " + b.name);
       inp.onfocus = function(){ inp.select(); };
       var ok = el("button", "cok", "ยืนยัน");
@@ -1654,10 +1658,10 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       if (payBusy) return;
       var arg = { cycleStart: dfmt(sy.start), name: b.name, paid: !paid };
       if (!paid && b.variable && !cycAmt(b, sy).real) {
-        var v = { amt: fmtAmt(b.amt) };
+        var v = { amt: fmtShort(b.amt) };
         openItem("จ่าย " + b.name, "จ่ายแล้ว", function(box){
           var g1 = group("ยอดที่จ่ายจริงรอบนี้ (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.autocomplete = "off"; ai.value = v.amt;
-          ai.oninput = function(){ v.amt = ai.value; }; g1.appendChild(ai); g1._hint("ปกติ ฿" + fmt(b.amt)); box.appendChild(g1);
+          ai.oninput = function(){ v.amt = ai.value; }; commaInput(ai); g1.appendChild(ai); g1._hint("ปกติ ฿" + fmt(b.amt)); box.appendChild(g1);
           setTimeout(function(){ ai.focus(); ai.select(); }, 350);
         }, function(){
           var amt = num(v.amt);
@@ -1682,7 +1686,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
   }
   function openBudgetEditor(type, b){
     var isNew = !b, f = { name: b ? b.name : "", amt: b ? b.amt : "", note: b ? b.note : "", hidden: !!(b && b.hidden), variable: !!(b && b.variable), cat: b ? b.cat : "", group: b ? b.group : "", match: b ? (b.match || []).join(", ") : "" };
-    var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtAmt(act.amt) : "" };
+    var sy = cycleFor(state.salaryDay, state.offset), act = b ? cycAmt(b, sy) : null, f2 = { actual: act && act.real ? fmtShort(act.amt) : "" };
     f.extra = b && b.extra ? b.extra.slice() : [];
     var title = isNew ? (type === "Category" ? "ตั้งงบหมวด" : "เพิ่ม" + BUD_TYPES[type]) : (type === "Category" ? "งบหมวด " + capLabel(b) : b.name);
     openItem(title, isNew ? "เพิ่ม" : "บันทึก", function(box){
@@ -1728,7 +1732,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         box.appendChild(g1); setTimeout(function(){ inp.focus(); }, 350);
       }
       var g2 = group(f.variable ? "ยอดปกติ / ประมาณการ (บาท)" : "ยอดต่อเดือน (บาท)"), ai = el("input", "txt amtin"); ai.inputMode = "decimal"; ai.placeholder = "0.00"; ai.autocomplete = "off";
-      ai.value = f.amt === "" ? "" : fmtAmt(f.amt); ai.oninput = function(){ f.amt = ai.value; };
+      ai.value = f.amt === "" ? "" : fmtShort(f.amt); ai.oninput = function(){ f.amt = ai.value; }; commaInput(ai);
       g2.appendChild(ai); box.appendChild(g2);
       if (type !== "Category") {
         var gv = group(), vr = el("div", "swrow"), vt = el("div", "txt");
@@ -1765,7 +1769,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       }
       if (!isNew && b.variable) {
         var ga = group("ยอดจริงรอบ " + dm(sy.start) + " – " + dm(sy.end)), aci = el("input", "txt amtin"); aci.inputMode = "decimal"; aci.placeholder = "ยังไม่ได้ใส่ (ใช้ยอดปกติ)"; aci.autocomplete = "off";
-        aci.value = f2.actual; aci.oninput = function(){ f2.actual = aci.value; };
+        aci.value = f2.actual; aci.oninput = function(){ f2.actual = aci.value; }; commaInput(aci);
         ga.appendChild(aci); box.appendChild(ga);
       }
       if (!isNew && type === "Category") setTimeout(function(){ ai.focus(); ai.select(); }, 350);
@@ -1811,13 +1815,13 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
         var sumP = op.reduce(function(a, p){ return a + (p.amt || 0); }, 0);
         l.appendChild(el("div", "mine", "แบ่ง " + (op.length + 1) + " คน · ของเรา ฿" + fmt(r.cost - sumP)));
         var pw = el("div", "parts"), md = meDone(r.parts);
-        var mb = el("button", "part" + (md ? " done" : ""), ME + " ฿" + fmtAmt(r.cost - sumP) + (md ? " ✓" : ""));
+        var mb = el("button", "part" + (md ? " done" : ""), ME + " ฿" + fmtShort(r.cost - sumP) + (md ? " ✓" : ""));
         mb.title = "แตะเพื่อสลับว่าจ่ายส่วนของเราแล้วหรือยัง";
         mb.onclick = function(ev){ ev.stopPropagation(); toggleSplit(r, -1); };
         pw.appendChild(mb);
         r.parts.forEach(function(p, idx){
           if (isMe(p)) return;
-          var pb = el("button", "part" + (p.done ? " done" : ""), p.name + (p.amt != null ? " ฿" + fmtAmt(p.amt) : "") + (p.done ? " ✓" : ""));
+          var pb = el("button", "part" + (p.done ? " done" : ""), p.name + (p.amt != null ? " ฿" + fmtShort(p.amt) : "") + (p.done ? " ✓" : ""));
           pb.title = "แตะเพื่อสลับว่าจ่ายคืนแล้วหรือยัง";
           pb.onclick = function(ev){ ev.stopPropagation(); toggleSplit(r, idx); };
           pw.appendChild(pb);
@@ -2355,7 +2359,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
       l.appendChild(metaLine("div", "note", [dshort(r.date) + " " + r.date.getFullYear(), isMeSheet && !it.split ? "" : "ทั้งบิล ฿" + fmt(r.cost)]));
       tx.appendChild(l);
       var rt = el("div", "rt");
-      var pb = el("button", "part" + (done ? " done" : ""), "฿" + fmtAmt(amt) + (done ? " ✓" : ""));
+      var pb = el("button", "part" + (done ? " done" : ""), "฿" + fmtShort(amt) + (done ? " ✓" : ""));
       // Mine: a split row ticks "เรา ✓"; a plain row flips Pending → Paid. Others: tick their share.
       if (!picking) pb.onclick = function(){ if (!isMeSheet) toggleSplit(r, it.idx); else if (it.split) toggleSplit(r, -1); else toggleStatus(r); };
       rt.appendChild(pb); tx.appendChild(rt);
@@ -2469,8 +2473,8 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var cv = document.createElement("canvas"), x = cv.getContext("2d");
     var total = o.items.reduce(function(a, it){ return a + it.amt; }, 0), qr = null;
     // With a PromptPay number (from the server) and the QR library loaded, a pay-this-amount QR replaces the barcode.
-    // Level H (30% recovery) so the app logo can sit over its middle. Not on my own bill: the QR would pay me.
-    if (!o.mine && state.promptpay && window.qrcode) { qr = qrcode(0, "H"); qr.addData(promptPayPayload(state.promptpay, total)); qr.make(); }
+    // Level H (30% recovery) so the app logo can sit over its middle.
+    if (state.promptpay && window.qrcode) { qr = qrcode(0, "H"); qr.addData(promptPayPayload(state.promptpay, total)); qr.make(); }
     function font(w, px, fam){ x.font = w + " " + px + "px " + (fam || TH); }
     function fit(t, maxW){
       if (x.measureText(t).width <= maxW) return t;
@@ -2729,7 +2733,7 @@ h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.02em}
     var f = el("div", "txf");
     var ab = el("label", "amt-in"); ab.appendChild(el("span", null, "฿"));
     var ai = document.createElement("input"); ai.inputMode = "decimal"; ai.placeholder = "0.00"; ai.autocomplete = "off"; ai.setAttribute("aria-label", "จำนวนเงิน");
-    ai.value = isFinite(r.cost) ? (r.cost % 1 ? r.cost.toFixed(2) : String(r.cost)) : "";
+    ai.value = isFinite(r.cost) ? fmtShort(r.cost) : ""; commaInput(ai);
     ai.oninput = function(){ r.cost = parseFloat(String(ai.value).replace(/,/g, "")); upd(); };
     ab.appendChild(ai); f.appendChild(ab);
 
